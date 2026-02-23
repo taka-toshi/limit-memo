@@ -58,6 +58,22 @@ export class AppController {
       this.localRepo.initialize();
     }
     
+    // 設定（制限タイプ/制限値）を読み込む
+    try {
+      const storedSettings = localStorage.getItem(CONFIG.SETTINGS_KEY);
+      if (storedSettings) {
+        const s = JSON.parse(storedSettings);
+        if (s && typeof s.limitType === 'string' && typeof s.limitValue === 'number') {
+          this.inputLimiter.setLimit(s.limitType, s.limitValue);
+          // UI反映
+          this.elements.limitTypeSelect.value = s.limitType;
+          this.elements.limitValueInput.value = s.limitValue;
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to load settings:', e);
+    }
+
     // UI更新
     this.updateUI();
     
@@ -232,6 +248,13 @@ export class AppController {
       }
       
       this.updateUI();
+      // 設定を永続化
+      try {
+        const settings = { limitType: type, limitValue: value };
+        localStorage.setItem(CONFIG.SETTINGS_KEY, JSON.stringify(settings));
+      } catch (e) {
+        console.error('Failed to save settings:', e);
+      }
     }
   }
 

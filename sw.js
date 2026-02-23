@@ -75,9 +75,20 @@ self.addEventListener('activate', (event) => {
  */
 self.addEventListener('fetch', (event) => {
   const { request } = event;
-  
-  // GitHub API へのリクエストはキャッシュしない
-  if (request.url.includes('api.github.com')) {
+  // Skip non-http(s) schemes (e.g., chrome-extension://)
+  try {
+    const urlObj = new URL(request.url);
+    if (urlObj.protocol !== 'http:' && urlObj.protocol !== 'https:') {
+      return; // do not handle non-http(s) requests
+    }
+
+    // Skip GitHub API / auth endpoints and other external APIs from caching
+    if (urlObj.hostname.includes('github.com') || urlObj.hostname.includes('api.github.com')) {
+      // Let the browser handle network-only for auth/API calls
+      return;
+    }
+  } catch (e) {
+    // If URL parsing fails, skip handling
     return;
   }
   
@@ -87,10 +98,18 @@ self.addEventListener('fetch', (event) => {
         // ネットワークから取得成功 → キャッシュを更新
         if (response && response.status === 200) {
           const responseClone = response.clone();
-          caches.open(CACHE_NAME)
-            .then((cache) => {
-              cache.put(request, responseClone);
-            });
+          // Only attempt to cache same-origin http(s) responses
+          try {
+            const reqUrl = new URL(request.url);
+            if (reqUrl.protocol === 'http:' || reqUrl.protocol === 'https:') {
+              caches.open(CACHE_NAME)
+                .then((cache) => {
+                  cache.put(request, responseClone).catch(() => {/* ignore unsupported requests */});
+                });
+            }
+          } catch (e) {
+            // ignore
+          }
         }
         return response;
       })

@@ -7,6 +7,7 @@ export const CONFIG = {
   
   // ストレージキー
   STORAGE_KEY: 'memo_data',
+  SETTINGS_KEY: 'memo_settings',
   AUTH_KEY: 'auth_data',
   
   // 入力制限タイプ
