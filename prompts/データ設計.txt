@@ -1,0 +1,143 @@
+1. データ設計の基本方針
+
+1.1 前提条件
+メモは 1ユーザー = 1メモ（単一）
+同時編集は想定しない
+クラウド保存は 1ファイル
+JSON形式
+クライアント主導同期
+
+1.2 設計思想
+人間可読（デバッグ容易）
+フィールド追加に強い
+クラウド依存情報を最小化
+暗号化単位を明確に
+
+2. データの論理構造（全体）
+
+トップレベル構造：
+meta
+memo
+sync
+
+Root
+ ├─ meta
+ ├─ memo
+ └─ sync
+
+3. 各データ要素の詳細設計
+3.1 meta（アプリ・フォーマット情報）
+
+目的：
+将来のバージョンアップ対応
+後方互換性の維持
+
+項目：
+schemaVersion : number
+    データ構造のバージョン
+appVersion : string
+    保存時のアプリバージョン
+createdAt : timestamp
+
+例：
+meta
+ ├─ schemaVersion : 1
+ ├─ appVersion    : "1.0.0"
+ └─ createdAt     : 2026-02-10T12:00:00Z
+
+3.2 memo（メモ本体）
+
+目的：
+ユーザーが実際に使うデータ
+暗号化対象の中心
+
+項目：
+content : string
+updatedAt : timestamp
+※ 将来案では memo全体を暗号化
+
+例：
+memo
+ ├─ content   : "今日は200文字制限で考える"
+ └─ updatedAt : 2026-02-10T12:30:00Z
+
+3.3 sync（同期制御情報）
+
+目的：
+ローカルとクラウドの整合性判定
+衝突回避
+同期状態の把握
+
+項目：
+lastSyncedAt : timestamp
+lastModifiedBy : enum { local, cloud }
+revision : number
+
+例：
+sync
+ ├─ lastSyncedAt     : 2026-02-10T12:25:00Z
+ ├─ lastModifiedBy  : local
+ └─ revision        : 12
+
+4. 完全なデータ例（JSONイメージ）
+
+{
+  meta: {
+    schemaVersion: 1,
+    appVersion: "1.0.0",
+    createdAt: "2026-02-10T12:00:00Z"
+  },
+  memo: {
+    content: "n文字制限メモアプリの設計中",
+    updatedAt: "2026-02-10T12:30:00Z"
+  },
+  sync: {
+    lastSyncedAt: "2026-02-10T12:25:00Z",
+    lastModifiedBy: "local",
+    revision: 12
+  }
+}
+
+5. 同期判定ロジック（データ視点）
+
+5.1 基本ルール
+revision が大きい方が新しい
+revision が同じ → 同一とみなす
+updatedAt は補助情報
+
+5.2 同期パターン
+パターン1：ローカルのみ更新
+local.revision > cloud.revision
+→ クラウドへ write
+
+パターン2：クラウドのみ更新
+local.revision < cloud.revision
+→ ローカルへ read
+
+パターン3：両方更新（理論上）
+local.revision == cloud.revision
+updatedAt が異なる
+→ 後勝ち（updatedAt が新しい方）
+
+6. ローカル保存時のデータ
+
+6.1 保存場所
+localStorage / IndexedDB
+クラウドと 同一構造
+
+6.2 利点
+変換不要
+デバッグ容易
+オフライン耐性
+
+7. 将来（暗号化）への拡張設計
+7.1 暗号化境界
+Root
+ ├─ meta        ← 平文
+ ├─ memo        ← 暗号化対象
+ └─ sync        ← 平文
+
+7.2 変更点
+memo → encryptedMemo
+content → ciphertext
+IV / salt を memo 内に保持

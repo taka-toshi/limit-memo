@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="n文字制限メモアプリ - PC・スマホ同期対応">
+  <meta name="theme-color" content="#2196F3">
+  
+  <title>Memo App - n文字制限メモ</title>
+  
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="/manifest.json">
+  
+  <!-- Icons -->
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>📝 Memo App</h1>
+      <p class="subtitle">n文字制限メモ - クラウド同期対応</p>
+    </header>
+
+    <main>
+      <!-- オフライン通知 -->
+      <div id="offlineIndicator" class="offline-indicator" style="display: none;">
+        ⚠️ オフラインモード - ローカルのみで動作中
+      </div>
+
+      <!-- 入力制限設定 -->
+      <section class="limit-settings">
+        <h2>入力制限設定</h2>
+        <div class="settings-group">
+          <label for="limitType">制限タイプ:</label>
+          <select id="limitType">
+            <option value="CHAR" selected>文字数</option>
+            <option value="BYTE">バイト数</option>
+          </select>
+          
+          <label for="limitValue">制限値:</label>
+          <input type="number" id="limitValue" value="200" min="1" max="10000">
+        </div>
+      </section>
+
+      <!-- メモ入力エリア -->
+      <section class="memo-section">
+        <h2>メモ</h2>
+        <textarea 
+          id="memoInput" 
+          placeholder="ここにメモを入力してください..."
+          spellcheck="false"
+        ></textarea>
+        
+        <!-- カウント表示 -->
+        <div class="count-info">
+          <span id="charCount">0 文字</span> / 
+          <span id="byteCount">0 バイト</span>
+        </div>
+        <div id="limitInfo" class="limit-info">
+          制限: 0 / 200 文字 (残り 200)
+        </div>
+      </section>
+
+      <!-- 同期コントロール -->
+      <section class="sync-section">
+        <h2>クラウド同期</h2>
+        <div class="sync-controls">
+          <button id="loginBtn" class="btn btn-primary">GitHub でログイン</button>
+          <button id="logoutBtn" class="btn btn-secondary" style="display: none;">ログアウト</button>
+          <button id="syncBtn" class="btn btn-sync" style="display: none;">🔄 同期</button>
+        </div>
+        <div id="syncStatus" class="sync-status"></div>
+      </section>
+
+      <!-- 説明 -->
+      <section class="info-section">
+        <h2>使い方</h2>
+        <ul>
+          <li><strong>ローカル保存:</strong> 入力内容は自動的に端末に保存されます</li>
+          <li><strong>クラウド同期:</strong> GitHub でログインすると、複数端末でメモを共有できます</li>
+          <li><strong>オフライン対応:</strong> ネットワーク接続がなくても使用できます</li>
+          <li><strong>PWA対応:</strong> ホーム画面に追加してアプリのように使用できます</li>
+        </ul>
+        
+        <h3>GitHub Personal Access Token の作成方法</h3>
+        <ol>
+          <li>GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)</li>
+          <li>「Generate new token (classic)」をクリック</li>
+          <li>Note: 任意の名前（例: Memo App）</li>
+          <li>Expiration: 任意の期限</li>
+          <li>「gist」にチェックを入れる</li>
+          <li>「Generate token」をクリック</li>
+          <li>生成されたトークンをコピーしてログイン時に入力</li>
+        </ol>
+        
+        <p class="note">
+          ⚠️ トークンは安全に管理してください。他人に共有しないでください。
+        </p>
+      </section>
+    </main>
+
+    <footer>
+      <p>&copy; 2026 Memo App - n文字制限メモアプリ</p>
+    </footer>
+  </div>
+
+  <!-- JavaScript (ES Modules) -->
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>

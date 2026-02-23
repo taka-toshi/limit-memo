@@ -1,0 +1,45 @@
+2.1 使うもの（既存サービス・技術）
+外部サービス
+
+GitHub Gist API または Google Drive API
+    認証（OAuth）
+    データ保存
+    履歴管理（Gistの場合）
+
+ブラウザ機能
+    Web Storage（localStorage / IndexedDB）
+    Service Worker
+    Web App Manifest
+TextEncoder（UTF-8バイト計算）
+
+インフラ
+    静的ホスティング（GitHub Pages）
+    HTTPS（自動）
+
+2.2 作るもの（責務）
+フロントエンド（PWA）
+
+UI
+    メモ入力画面
+    文字数 / バイト数表示
+    残量・制限警告
+    同期状態表示（未同期 / 同期済）
+
+ロジック
+    入力制限処理
+    ローカル保存
+    クラウド Read / Write 制御
+    衝突時の単純判定（後勝ち）
+
+同期制御レイヤ
+    認証トークン管理
+    保存先ID管理（Gist ID / File ID）
+    同期タイミング制御
+    オフライン検知
+    ※ 中身の解釈はしない
+
+PWA対応
+    オフライン起動
+    キャッシュ制御
+    ホーム画面追加
+    WebAPK対応

@@ -1,0 +1,23 @@
+/
+├── index.html              # メインHTML
+├── manifest.json           # PWAマニフェスト
+├── sw.js                   # Service Worker
+├── css/
+│   └── style.css          # スタイル
+├── js/
+│   ├── config.js          # 設定定数
+│   ├── models/
+│   │   └── Memo.js        # Memoドメインオブジェクト
+│   ├── services/
+│   │   ├── InputLimiter.js
+│   │   ├── LocalStorageRepository.js
+│   │   ├── CloudRepository.js
+│   │   ├── GistRepository.js
+│   │   ├── SyncManager.js
+│   │   └── AuthManager.js
+│   ├── controllers/
+│   │   └── AppController.js
+│   └── app.js             # エントリーポイント
+└── icons/
+    ├── icon-192.png
+    └── icon-512.png

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>Icon Generator</title>
+</head>
+
+<body>
+  <h1>Memo App Icon Generator</h1>
+  <p>以下のSVGアイコンを使用してPNGファイルを生成してください</p>
+
+  <h2>192x192 Icon</h2>
+  <svg id="icon-192" width="192" height="192" xmlns="http://www.w3.org/2000/svg">
+    <rect width="192" height="192" fill="#2196F3" rx="32" />
+    <text x="96" y="140" font-size="120" text-anchor="middle" fill="white">📝</text>
+  </svg>
+  <button onclick="downloadSVG('icon-192', 'icon-192.svg')">Download SVG</button>
+
+  <h2>512x512 Icon</h2>
+  <svg id="icon-512" width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+    <rect width="512" height="512" fill="#2196F3" rx="85" />
+    <text x="256" y="380" font-size="320" text-anchor="middle" fill="white">📝</text>
+  </svg>
+  <button onclick="downloadSVG('icon-512', 'icon-512.svg')">Download SVG</button>
+
+  <hr>
+  <p><strong>手順:</strong></p>
+  <ol>
+    <li>上記のdownloadボタンをクリック → 「名前を付けて画像を保存」</li>
+    <li>または、オンラインSVG to PNGコンバーターを使用</li>
+    <li>icon-192.png と icon-512.png として /icons/ ディレクトリに保存</li>
+  </ol>
+
+  <p><em>または、下記のコマンドで簡易的な画像を生成できます（ImageMagick必要）:</em></p>
+  <pre>
+convert -size 192x192 xc:#2196F3 -fill white -pointsize 120 -gravity center -annotate +0+0 "📝" icons/icon-192.png
+convert -size 512x512 xc:#2196F3 -fill white -pointsize 320 -gravity center -annotate +0+0 "📝" icons/icon-512.png
+  </pre>
+  <script>
+    function downloadSVG(svgId, filename) {
+      const svg = document.getElementById(svgId);
+      const serializer = new XMLSerializer();
+      const svgStr = serializer.serializeToString(svg);
+
+      const blob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      URL.revokeObjectURL(url);
+    }
+  </script>
+</body>
+
+</html>

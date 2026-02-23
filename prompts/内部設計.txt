@@ -1,0 +1,187 @@
+1. 内部設計：全体方針
+フロントエンドのみ
+責務分離を強く
+同期方式は外部クラウド
+暗号化を入れても壊れない構造
+同時編集はしない
+差分マージしない
+同期競合は後勝ち
+
+2. クラス図（論理クラス構成）
+
+2.1 クラス一覧と責務
+Memo
+    メモ本文を表現するドメインオブジェクト
+    属性
+        content : string
+        updatedAt : timestamp
+    責務
+        メモ本文の保持
+        更新時刻の管理
+
+InputLimiter
+    入力制限ロジック専用
+    属性
+        limitType : enum { CHAR, BYTE }
+        limitValue : number
+    責務
+    現在の文字数 / バイト数計算
+    制限超過判定
+
+LocalStorageRepository
+    端末内保存を担当
+    責務
+        Memo の保存
+        Memo の読み込み
+        オフライン時の唯一の永続層
+
+CloudRepository（抽象）
+    クラウド保存の抽象化レイヤ※ 実体は持たない
+    責務
+        read()
+        write()
+
+GistRepository（CloudRepositoryを実装）
+    GitHub Gist への保存を担当
+    属性
+        gistId
+        authToken
+        （Google Drive を使う場合は DriveRepository を追加）
+    責務
+        クラウドからのメモ取得
+        クラウドへのメモ保存
+
+SyncManager
+    同期制御の中核
+    属性
+        syncState
+        lastSyncedAt
+    責務
+        同期タイミング判断
+        ローカル vs クラウドの比較
+        衝突時の解決（後勝ち）
+
+AuthManager
+    外部サービス認証管理
+    属性
+        authState
+        accessToken
+    責務
+        OAuth ログイン
+        トークン保持・更新
+        ログイン状態判定
+
+AppController
+    UI と内部ロジックの仲介役
+    責務
+        UIイベント処理
+        各コンポーネントの呼び出し
+        アプリ全体の流れ制御
+
+2.2 クラス間の関係（矢印）
+
+AppController
+→ Memo
+→ InputLimiter
+→ LocalStorageRepository
+→ SyncManager
+
+SyncManager
+→ CloudRepository
+→ LocalStorageRepository
+
+CloudRepository
+→（実装）GistRepository
+
+GistRepository
+→ AuthManager
+
+2.3 設計上のポイント
+クラウド依存は CloudRepository に閉じ込める
+Memo は純粋データ（ロジックを持たない）
+同期は SyncManager に一元化
+暗号化を入れる場合：
+    CloudRepository の前後に Encryptor を挟むだけで済む
+
+3. ステートマシン図（アプリ状態遷移）
+
+3.1 状態一覧
+INIT
+LOCAL_ONLY
+AUTHENTICATED
+SYNCING
+SYNCED
+OFFLINE
+
+3.2 状態遷移（矢印）
+
+INIT
+→（アプリ起動）
+→ LOCAL_ONLY
+
+LOCAL_ONLY
+→（ユーザーがログイン）
+→ AUTHENTICATED
+
+LOCAL_ONLY
+→（ネットワーク切断）
+→ OFFLINE
+
+AUTHENTICATED
+→（クラウドにデータあり）
+→ SYNCING
+
+AUTHENTICATED
+→（クラウド未使用）
+→ SYNCED
+
+SYNCING
+→（Read成功）
+→ SYNCED
+
+SYNCING
+→（通信失敗）
+→ OFFLINE
+
+SYNCED
+→（ユーザー編集）
+→ SYNCING
+
+SYNCED
+→（ネットワーク切断）
+→ OFFLINE
+
+OFFLINE
+→（ネットワーク復帰）
+→ AUTHENTICATED
+（ログイン済みの場合）
+
+OFFLINE
+→（ネットワーク復帰）
+→ LOCAL_ONLY
+（未ログインの場合）
+
+3.3 状態ごとの振る舞い
+INIT
+    Service Worker 初期化
+    LocalStorage 読み込み
+
+LOCAL_ONLY
+    ローカル保存のみ
+    同期UIは無効
+
+AUTHENTICATED
+    同期可能状態
+    Read / Write が許可される
+
+SYNCING
+    クラウド通信中
+    UIは「同期中」表示
+
+SYNCED
+    ローカルとクラウドが一致
+    通常編集可能
+
+OFFLINE
+    ローカル編集のみ
+    同期は保留
