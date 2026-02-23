@@ -1,23 +1,26 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="n文字制限メモアプリ - PC・スマホ同期対応">
   <meta name="theme-color" content="#2196F3">
-  
+
   <title>Memo App - n文字制限メモ</title>
-  
+
   <!-- PWA Manifest -->
-  <link rel="manifest" href="/manifest.json">
-  
+
   <!-- Icons -->
-  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
-  <link rel="apple-touch-icon" href="/icons/icon-192.png">
-  
+
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="/css/style.css">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/style.css">
+
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
 </head>
+
 <body>
   <div class="container">
     <header>
@@ -40,7 +43,7 @@
             <option value="CHAR" selected>文字数</option>
             <option value="BYTE">バイト数</option>
           </select>
-          
+
           <label for="limitValue">制限値:</label>
           <input type="number" id="limitValue" value="200" min="1" max="10000">
         </div>
@@ -49,15 +52,11 @@
       <!-- メモ入力エリア -->
       <section class="memo-section">
         <h2>メモ</h2>
-        <textarea 
-          id="memoInput" 
-          placeholder="ここにメモを入力してください..."
-          spellcheck="false"
-        ></textarea>
-        
+        <textarea id="memoInput" placeholder="ここにメモを入力してください..." spellcheck="false"></textarea>
+
         <!-- カウント表示 -->
         <div class="count-info">
-          <span id="charCount">0 文字</span> / 
+          <span id="charCount">0 文字</span> /
           <span id="byteCount">0 バイト</span>
         </div>
         <div id="limitInfo" class="limit-info">
@@ -85,10 +84,11 @@
           <li><strong>オフライン対応:</strong> ネットワーク接続がなくても使用できます</li>
           <li><strong>PWA対応:</strong> ホーム画面に追加してアプリのように使用できます</li>
         </ul>
-        
+
         <h3>認証（推奨: GitHub Device Flow）</h3>
         <p>
-          このアプリは GitHub の <strong>Device Flow</strong> を使ってログインします。ボタンを押すと、アプリが確認用のURLとコードを表示します。ブラウザで表示されたURLにアクセスし、コードを入力して承認してください。
+          このアプリは GitHub の <strong>Device Flow</strong>
+          を使ってログインします。ボタンを押すと、アプリが確認用のURLとコードを表示します。ブラウザで表示されたURLにアクセスし、コードを入力して承認してください。
         </p>
         <ol>
           <li>画面の「GitHub でログイン」ボタンをクリック</li>
@@ -108,6 +108,7 @@
   </div>
 
   <!-- JavaScript (ES Modules) -->
-  <script type="module" src="/js/app.js"></script>
+  <script type="module" src="js/app.js"></script>
 </body>
+
 </html>
