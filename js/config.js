@@ -44,7 +44,7 @@ export const CONFIG = {
     API_BASE: 'https://api.github.com',
     SCOPES: 'gist',
     // GitHub Device Flow / OAuth 用の Client ID (GitHub OAuth App の Client ID)
-    CLIENT_ID: '' ,
+    CLIENT_ID: 'Ov23liuug3bKnQRzhFNI' ,
     FILENAME: 'memo.json'
   }
 };
