@@ -167,7 +167,7 @@ class DriveRepository extends CloudRepository {
 ### 3. セキュリティ考慮
 
 - ✅ HTTPS必須（PWA要件）
-- ✅ Personal Access Token での認証
+- ✅ Device Flow による認証（公開静的サイト向け）
 - ⚠️ データは平文（暗号化は将来拡張）
 - ⚠️ トークンはlocalStorage（改善の余地あり）
 
@@ -245,35 +245,15 @@ if (localRevision > cloudRevision) {
 
 ## OAuth連携の実装
 
-### 現在の実装（Personal Access Token）
+本プロジェクトでは、公開された静的サイト向けに **GitHub Device Flow** を既定の認証方式として採用しています。実装は `js/services/AuthManager.js` の `loginWithGitHubDeviceFlow()` を参照してください。
 
-```javascript
-async loginWithGitHub() {
-  const token = prompt('GitHub Personal Access Token を入力...');
-  
-  // トークン検証
-  const response = await fetch('https://api.github.com/user', {
-    headers: { 'Authorization': `token ${token}` }
-  });
-  
-  if (response.ok) {
-    this.accessToken = token;
-    localStorage.setItem('auth_data', JSON.stringify({ accessToken: token }));
-  }
-}
-```
+### 採用理由と注意点
 
-### 注意点と改善案
+- Device Flow は Client Secret を不要とし、サーバーレス／静的ホスティング環境で安全に動作します。
+- トークンは `localStorage` に保存されますが、XSS 対策（CSP、依存ライブラリの最新化等）を必須としてください。
+- 開発時に短期的に Personal Access Token を用いる場合は可能ですが、本番公開アプリでは推奨しません。
 
-**現在の制限**:
-- ユーザーがGitHubでトークンを手動作成する必要がある
-- トークンは平文でlocalStorageに保存される
-
-**推奨改善**:
-- OAuth App を使用した正式な認証フロー
-- または GitHub Device Flow（サーバーレス対応）
-
-実装例は `AuthManager.js` にコメントで記載済み。
+必要に応じて将来、サーバー側でトークン管理を行う OAuth Authorization Code フローへ移行可能です。
 
 ## テスト方法
 
@@ -351,7 +331,7 @@ convert icons/icon-512.svg icons/icon-512.png
 
 ### 2. OAuth認証
 
-Personal Access Token方式は簡易実装。本番環境では OAuth App または Device Flow を推奨。
+Personal Access Token方式は開発時の実装。本番環境では Device Flow を推奨。
 
 ### 3. 同時編集
 
@@ -475,6 +455,5 @@ export class ClassName {
 1. **アイコンのPNG変換** - SVGをPNGに変換
 2. **デプロイ** - GitHub Pages等にデプロイ
 3. **テスト** - 実機でPWA動作確認
-4. **OAuth改善** - 本番環境ではOAuth App使用を検討
 
 すべてのファイルは `/mnt/user-data/outputs/memo-app/` に出力されています。

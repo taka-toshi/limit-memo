@@ -95,30 +95,14 @@ memo-app/
 
 ## GitHub認証の設定
 
-### Personal Access Token（開発用）
+### 認証（推奨: GitHub Device Flow）
 
-現在の実装では簡易的にPersonal Access Tokenを使用しています。
+本アプリは公開された静的サイト向けに GitHub Device Flow を既定の認証方式として採用しています。
 
-1. GitHub → Settings → Developer settings
-2. Personal access tokens → Tokens (classic)
-3. "Generate new token (classic)"
-4. Note: `Memo App`
-5. Expiration: 任意の期限
-6. Scopes: **gist** にチェック ✅
-7. "Generate token" をクリック
-8. 生成されたトークンをコピー
-9. アプリの「GitHub でログイン」ボタンをクリックして入力
+- 利点: Client Secret不要でサーバーを用意せずに安全に認可が可能
+- ユーザーは GitHub 上で直接承認するためトークンの手動管理が不要
 
-⚠️ **注意**: トークンは安全に管理してください。
-
-### OAuth App（本番環境推奨）
-
-本番環境では OAuth App の使用を推奨します：
-
-```javascript
-// 実装例は AuthManager.js のコメントを参照
-// サーバーレス環境では GitHub Device Flow を検討
-```
+開発時のみ一時的に Personal Access Token を使うことは可能ですが、本番公開時は Device Flow を推奨します。デプロイ後に OAuth App を作成して `CONFIG.GIST.CLIENT_ID` を設定するワークフローについては `documents/DEPLOY.md` を参照してください。
 
 ## PWA インストール方法
 
@@ -238,7 +222,7 @@ Chrome DevTools:
 ### 現在の実装
 
 - ✅ HTTPS必須（PWA要件）
-- ✅ Personal Access Token は localStorage に保存
+- ✅ アクセストークンは localStorage に保存（Device Flow で取得）
 - ❌ データは平文で保存
 
 ### 将来の拡張（暗号化）
@@ -294,8 +278,7 @@ class EncryptedGistRepository extends GistRepository {
 - Service Worker が正常に登録されているか確認
 
 ### 同期ができない
-
-- Personal Access Token が正しいか確認
+- 認証が必要か確認（ログイン状態の確認、Device Flow の再実行）
 - gist スコープが付与されているか確認
 - ネットワーク接続を確認
 - ブラウザコンソールでエラーを確認

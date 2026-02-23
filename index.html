@@ -86,19 +86,18 @@
           <li><strong>PWA対応:</strong> ホーム画面に追加してアプリのように使用できます</li>
         </ul>
         
-        <h3>GitHub Personal Access Token の作成方法</h3>
+        <h3>認証（推奨: GitHub Device Flow）</h3>
+        <p>
+          このアプリは GitHub の <strong>Device Flow</strong> を使ってログインします。ボタンを押すと、アプリが確認用のURLとコードを表示します。ブラウザで表示されたURLにアクセスし、コードを入力して承認してください。
+        </p>
         <ol>
-          <li>GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)</li>
-          <li>「Generate new token (classic)」をクリック</li>
-          <li>Note: 任意の名前（例: Memo App）</li>
-          <li>Expiration: 任意の期限</li>
-          <li>「gist」にチェックを入れる</li>
-          <li>「Generate token」をクリック</li>
-          <li>生成されたトークンをコピーしてログイン時に入力</li>
+          <li>画面の「GitHub でログイン」ボタンをクリック</li>
+          <li>表示されるURL（https://github.com/login/device）にアクセス</li>
+          <li>表示されたコード（例: XXXX-YYYY）を入力して承認</li>
+          <li>承認が完了するとアプリに戻り、自動でトークンが取得されます</li>
         </ol>
-        
         <p class="note">
-          ⚠️ トークンは安全に管理してください。他人に共有しないでください。
+          参考: 開発時の簡易方法として Personal Access Token を一時利用できますが、本番公開アプリでは推奨されません。
         </p>
       </section>
     </main>

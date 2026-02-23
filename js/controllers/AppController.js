@@ -152,7 +152,8 @@ export class AppController {
   async handleLogin() {
     try {
       this.updateSyncStatus('認証中...');
-      await this.authManager.loginWithGitHub();
+      // Device Flow を使用
+      await this.authManager.loginWithGitHubDeviceFlow();
       await this.transitionTo(CONFIG.APP_STATE.AUTHENTICATED);
       await this.initialSync();
       this.updateSyncStatus('ログイン成功');

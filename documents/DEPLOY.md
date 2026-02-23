@@ -42,6 +42,19 @@ git push -u origin main
 https://your-username.github.io/memo-app/
 ```
 
+※ 注意: 本リポジトリでは `CONFIG.GIST.CLIENT_ID` を空欄のままコミットしておき、まず GitHub Pages にデプロイして公開URLを確定させるワークフローを想定しています。公開URLが確定したら下記手順で OAuth App を作成し、取得した Client ID を `js/config.js` の `CONFIG.GIST.CLIENT_ID` に追記して再度プッシュしてください。
+
+OAuth App 作成と Client ID 反映手順（簡易）:
+1. GitHub → Settings → Developer settings → OAuth Apps → New OAuth App
+2. Application name: 任意（例: Memo App）
+3. Homepage URL: 公開された Pages URL（例: https://your-username.github.io/memo-app/）
+4. Authorization callback URL: 任意（Device Flow を使う場合は必須ではありませんが、将来の互換用に `https://your-username.github.io/memo-app/` を指定しておくと良い）
+5. 作成後、表示される Client ID をコピー
+6. `js/config.js` の `CONFIG.GIST.CLIENT_ID` に Client ID を貼り付け
+7. 保存してコミット・プッシュ
+
+このワークフローにより、公開前に Client ID をリポジトリに含めずに済み、Pages URL を確定してから設定できます。
+
 ### カスタムドメイン設定
 
 1. Pages設定 → Custom domain
@@ -100,15 +113,6 @@ https://your-username.github.io/memo-app/
 2. "Add custom domain"
 3. ドメイン名を入力
 4. DNSレコード設定（Netlifyが自動提案）
-
-### 環境変数（将来のOAuth対応時）
-
-1. Site settings → Environment variables
-2. Key/Value で設定:
-   ```
-   GITHUB_CLIENT_ID=your_client_id
-   GITHUB_CLIENT_SECRET=your_client_secret
-   ```
 
 ## Vercel
 

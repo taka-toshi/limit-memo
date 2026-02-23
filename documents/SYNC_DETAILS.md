@@ -218,57 +218,27 @@ revision +1, lastModifiedBy='local'
 ローカルの変更をクラウドに反映
 ```
 
-## OAuth 認証フロー
+## 認証フロー（現在: Device Flow）
 
-### 現在の実装（Personal Access Token）
-
-```
-1. ユーザーが「ログイン」ボタンをクリック
-2. プロンプトでトークンを入力
-3. GitHub API にトークンを検証リクエスト
-   GET https://api.github.com/user
-4. 成功 → localStorage に保存
-5. 失敗 → エラーメッセージ表示
-```
-
-**制限事項**:
-- トークンは平文で localStorage に保存される
-- ユーザーが手動でトークンをコピー＆ペーストする必要がある
-- トークンの有効期限管理が必要
-
-### 推奨実装（OAuth App）
+このプロジェクトでは、公開された静的サイト向けに **GitHub Device Flow** を採用しています。フローの概要は以下の通りです：
 
 ```
-1. ユーザーが「ログイン」ボタンをクリック
-2. GitHub 認証ページにリダイレクト
-   https://github.com/login/oauth/authorize
-   ?client_id=YOUR_CLIENT_ID
-   &redirect_uri=https://yourdomain.com/callback
-   &scope=gist
-3. ユーザーが承認
-4. コールバックURLにリダイレクト
-   https://yourdomain.com/callback?code=AUTHORIZATION_CODE
-5. サーバーでコードをトークンに交換
-   POST https://github.com/login/oauth/access_token
-6. アクセストークンを取得
-7. localStorage に保存
+1. アプリがデバイスコードとユーザーコードをリクエスト
+  POST https://github.com/login/device/code
+2. アプリがユーザーに検証URL（https://github.com/login/device）とコードを表示
+3. ユーザーが別タブでURLにアクセスし、コードを入力して承認
+4. アプリがポーリングでトークンを取得
+  POST https://github.com/login/oauth/access_token
+5. 成功 → アクセストークンを受け取り localStorage に保存
 ```
 
-**注意**: OAuth App では Client Secret が必要なため、完全にサーバーレスで実装することはできません。
+メリット:
+- Client Secret を不要とし、サーバーがなくても安全に認証できる
+- ユーザーは GitHub 上で直接承認するためトークン漏洩リスクが低い
 
-### サーバーレス対応（Device Flow）
-
-GitHub の Device Flow を使用すると、サーバーなしで OAuth を実装可能：
-
-```
-1. デバイスコードとユーザーコードを取得
-   POST https://github.com/login/device/code
-2. ユーザーに検証URLとコードを表示
-   https://github.com/login/device
-3. ユーザーがブラウザで承認
-4. ポーリングでトークンを取得
-   POST https://github.com/login/oauth/access_token
-```
+注意点:
+- ユーザーは別タブで承認操作が必要（UX上の負担）
+- トークンはブラウザに保存されるため XSS 対策は必須
 
 ## Gist API との連携
 
