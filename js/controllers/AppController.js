@@ -145,21 +145,52 @@ export class AppController {
     }
 
     // ローカルデータ削除（インページ確認）
-    if (this.elements.clearMemoBtn) {
-      this.elements.clearMemoBtn.addEventListener('click', () => {
-        if (this.elements.clearMemoConfirm) this.elements.clearMemoConfirm.style.display = 'block';
+    const modal = this.elements.clearMemoConfirm;
+    const openBtn = this.elements.clearMemoBtn;
+    const cancelBtn = this.elements.cancelClearMemoBtn;
+    const confirmBtn = this.elements.confirmClearMemoBtn;
+
+    // 開く
+    if (openBtn) {
+      openBtn.addEventListener('click', () => {
+        if (!modal) return;
+
+        modal.style.display = 'block';
+        modal.setAttribute('aria-hidden', 'false');
+        modal.removeAttribute('inert');
+
+        // モーダル内へフォーカス移動
+        confirmBtn?.focus();
       });
     }
 
-    if (this.elements.cancelClearMemoBtn) {
-      this.elements.cancelClearMemoBtn.addEventListener('click', () => {
-        if (this.elements.clearMemoConfirm) this.elements.clearMemoConfirm.style.display = 'none';
+    // キャンセル（閉じる）
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', () => {
+        if (!modal) return;
+
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+        modal.setAttribute('inert', '');
+
+        // 元のボタンへフォーカスを戻す
+        openBtn?.focus();
       });
     }
 
-    if (this.elements.confirmClearMemoBtn) {
-      this.elements.confirmClearMemoBtn.addEventListener('click', () => {
+    // 削除実行
+    if (confirmBtn) {
+      confirmBtn.addEventListener('click', () => {
         this.handleClearMemo();
+
+        if (!modal) return;
+
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+        modal.setAttribute('inert', '');
+
+        // フォーカス戻す
+        openBtn?.focus();
       });
     }
 
@@ -184,7 +215,7 @@ export class AppController {
       value = this.inputLimiter.truncate(value);
       this.elements.memoInput.value = value;
     }
-
+    value = this.sanitizeBasic(value);
     // メモ更新
     this.currentMemo.update(value);
     
@@ -475,12 +506,18 @@ export class AppController {
     this.updateUI();
   }
 
+  sanitizeBasic(value) {
+    return value
+      .replace(/\u0000/g, '')        // NULL文字
+      .replace(/\r\n?/g, '\n')      // 改行を統一
+  }
+
   /**
    * UI更新
    */
   updateUI() {
     // メモ表示
-    if (this.currentMemo) {
+    if (this.currentMemo && typeof this.currentMemo.content === 'string') {
       this.elements.memoInput.value = this.currentMemo.content;
     }
     
@@ -542,7 +579,7 @@ export class AppController {
     if ('serviceWorker' in navigator) {
       try {
         const registration = await navigator.serviceWorker.register('./sw.js');
-        console.log('Service Worker registered:', registration);
+        /*console.log('Service Worker registered:', registration);*/
       } catch (error) {
         console.error('Service Worker registration failed:', error);
       }

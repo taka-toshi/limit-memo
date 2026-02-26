@@ -26,8 +26,7 @@
     </header>
 
     <!-- グローバルステータス表示 -->
-    <div id="syncStatus" class="sync-status" style="text-align: left; margin: 10px 0; font-size: 14px; color: #555;">
-    </div>
+    <div id="syncStatus" class="sync-status"></div>
 
     <main>
       <!-- オフライン通知 -->
@@ -87,7 +86,7 @@
       </section>
 
       <!-- モーダル: ローカルデータ削除確認 -->
-      <div id="clearMemoConfirm" aria-hidden="true" role="dialog" aria-modal="true" style="display:none;">
+      <div id="clearMemoConfirm" aria-hidden="true" role="dialog" aria-modal="true" inert style="display:none;">
         <div class="modal-backdrop"></div>
         <div class="modal-box" role="document">
           <h3>ローカルデータの削除</h3>
