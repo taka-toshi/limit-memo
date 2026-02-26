@@ -21,6 +21,15 @@ export class LocalStorageRepository {
    */
   save(data) {
     try {
+      // settings があれば別キーにも保存して互換性を保つ
+      if (data.settings) {
+        try {
+          localStorage.setItem(CONFIG.SETTINGS_KEY, JSON.stringify(data.settings));
+        } catch (e) {
+          console.warn('Failed to persist settings separately:', e);
+        }
+      }
+
       const jsonString = JSON.stringify(data);
       localStorage.setItem(this.storageKey, jsonString);
     } catch (error) {
@@ -39,7 +48,27 @@ export class LocalStorageRepository {
       if (!jsonString) {
         return null;
       }
-      return JSON.parse(jsonString);
+      const data = JSON.parse(jsonString);
+      // 互換性: settings が存在しない場合は別キーから読み込む
+      if (!data.settings) {
+        try {
+          const storedSettings = localStorage.getItem(CONFIG.SETTINGS_KEY);
+          if (storedSettings) {
+            data.settings = JSON.parse(storedSettings);
+          } else {
+            data.settings = {
+              limitType: CONFIG.DEFAULT_LIMIT.type,
+              limitValue: CONFIG.DEFAULT_LIMIT.value
+            };
+          }
+        } catch (e) {
+          data.settings = {
+            limitType: CONFIG.DEFAULT_LIMIT.type,
+            limitValue: CONFIG.DEFAULT_LIMIT.value
+          };
+        }
+      }
+      return data;
     } catch (error) {
       console.error('LocalStorage load failed:', error);
       return null;
@@ -105,6 +134,11 @@ export class LocalStorageRepository {
         content: '',
         updatedAt: new Date().toISOString()
       },
+      // 入力制限設定をデフォルトで保持
+      settings: {
+        limitType: CONFIG.DEFAULT_LIMIT.type,
+        limitValue: CONFIG.DEFAULT_LIMIT.value
+      },
       sync: {
         lastSyncedAt: null,
         lastModifiedBy: CONFIG.SYNC.MODIFIED_BY.LOCAL,
@@ -119,6 +153,11 @@ export class LocalStorageRepository {
   initialize() {
     const initialData = this._createInitialData();
     this.save(initialData);
+    try {
+      localStorage.setItem(CONFIG.SETTINGS_KEY, JSON.stringify(initialData.settings));
+    } catch (e) {
+      // ignore
+    }
     return initialData;
   }
 }

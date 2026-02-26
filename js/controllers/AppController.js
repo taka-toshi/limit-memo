@@ -248,6 +248,26 @@ export class AppController {
         const cloudData = await this.cloudRepo.read();
         if (cloudData) {
           this.currentMemo = Memo.fromJSON(cloudData.memo);
+          // cloud に含まれる settings があれば InputLimiter と UI に反映
+          if (cloudData.settings) {
+            try {
+              const s = cloudData.settings;
+              this.inputLimiter.setLimit(s.limitType || CONFIG.DEFAULT_LIMIT.type, s.limitValue || CONFIG.DEFAULT_LIMIT.value);
+              // UI要素も更新
+              if (this.elements.limitTypeSelect) this.elements.limitTypeSelect.value = this.inputLimiter.limitType;
+              if (this.elements.limitValueInput) this.elements.limitValueInput.value = this.inputLimiter.limitValue;
+              // 永続化して localRepo と整合させる
+              try {
+                const existing = this.localRepo.load() || this.localRepo._createInitialData();
+                existing.settings = { limitType: this.inputLimiter.limitType, limitValue: this.inputLimiter.limitValue };
+                this.localRepo.save(existing);
+              } catch (e) {
+                console.warn('Failed to persist cloud settings locally:', e);
+              }
+            } catch (e) {
+              console.warn('Failed to apply cloud settings:', e);
+            }
+          }
           this.updateUI();
         }
       } else {
@@ -364,12 +384,17 @@ export class AppController {
       }
       
       this.updateUI();
-      // 設定を永続化
+      // 設定をローカルデータ構造へ永続化（クラウド同期の対象にする）
       try {
-        const settings = { limitType: type, limitValue: value };
-        localStorage.setItem(CONFIG.SETTINGS_KEY, JSON.stringify(settings));
+        const existing = this.localRepo.load() || this.localRepo._createInitialData();
+        existing.settings = { limitType: type, limitValue: value };
+        existing.sync.lastModifiedBy = CONFIG.SYNC.MODIFIED_BY.LOCAL;
+        existing.sync.revision = (existing.sync.revision || 0) + 1;
+        this.localRepo.save(existing);
       } catch (e) {
-        console.error('Failed to save settings:', e);
+        console.error('Failed to save settings into localRepo:', e);
+        // フォールバックで従来通り別キーにも保存
+        try { localStorage.setItem(CONFIG.SETTINGS_KEY, JSON.stringify({ limitType: type, limitValue: value })); } catch (_) {}
       }
     }
   }
@@ -386,6 +411,17 @@ export class AppController {
       
       if (syncedData) {
         this.currentMemo = Memo.fromJSON(syncedData.memo);
+        // 同期された settings を反映
+        if (syncedData.settings) {
+          try {
+            const s = syncedData.settings;
+            this.inputLimiter.setLimit(s.limitType || CONFIG.DEFAULT_LIMIT.type, s.limitValue || CONFIG.DEFAULT_LIMIT.value);
+            if (this.elements.limitTypeSelect) this.elements.limitTypeSelect.value = this.inputLimiter.limitType;
+            if (this.elements.limitValueInput) this.elements.limitValueInput.value = this.inputLimiter.limitValue;
+          } catch (e) {
+            console.warn('Failed to apply synced settings:', e);
+          }
+        }
         this.updateUI();
       }
       
