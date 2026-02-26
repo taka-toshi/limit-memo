@@ -154,6 +154,13 @@ section h2 {
   margin-bottom: 10px;
 }
 
+.local-confirm-btns {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
 .btn {
   padding: 10px 20px;
   border: none;

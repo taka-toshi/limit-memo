@@ -25,6 +25,10 @@
       <p class="subtitle">n文字制限メモ - クラウド同期対応</p>
     </header>
 
+    <!-- グローバルステータス表示 -->
+    <div id="syncStatus" class="sync-status" style="text-align: center; margin: 10px 0; font-size: 14px; color: #555;">
+    </div>
+
     <main>
       <!-- オフライン通知 -->
       <div id="offlineIndicator" class="offline-indicator" style="display: none;">
@@ -42,7 +46,8 @@
           </select>
 
           <label for="limitValue">制限値:</label>
-          <input type="number" id="limitValue" value="200" min="1" max="5000">
+          <input type="number" id="limitValue" value="200" min="1" max="5000"
+            onchange="if(this.value < 1) this.value = 1; else if(this.value > 5000) this.value = 5000;">
         </div>
       </section>
 
@@ -75,17 +80,17 @@
           の"View your gists"で確認できます。ファイル名は
           <code>memo.json</code> で、description は変更しないでください。
         </p>
-        <div id="syncStatus" class="sync-status"></div>
       </section>
       <section class="local-section">
         <h2>ローカル</h2>
-        <button id="clearMemoBtn" class="btn btn-warning">ローカルデータ削除</button>
+        <button id="clearMemoBtn" class="btn btn-primary">ローカルデータ削除</button>
         <div id="clearMemoConfirm"
           style="display:none;margin-top:8px;padding:8px;border:1px solid #e0e0e0;background:#fff8e1;">
-          <div>ローカルに保存されたメモを完全に削除します。復元できません。よろしいですか？</div>
-          <div style="margin-top:8px;">
-            <button id="confirmClearMemoBtn" class="btn">削除する</button>
-            <button id="cancelClearMemoBtn" class="btn" style="margin-left:8px;">キャンセル</button>
+          <div>ローカルに保存されたメモを完全に削除します。復元できません。<br>また、クラウドとの連携が解除されます。よろしいですか？</div>
+          <br>
+          <div class="local-confirm-btns">
+            <button id=" confirmClearMemoBtn" class="btn btn-danger">削除する</button>
+            <button id="cancelClearMemoBtn" class="btn">キャンセル</button>
           </div>
         </div>
       </section>

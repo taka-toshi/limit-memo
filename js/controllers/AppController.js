@@ -64,6 +64,11 @@ export class AppController {
       if (storedSettings) {
         const s = JSON.parse(storedSettings);
         if (s && typeof s.limitType === 'string' && typeof s.limitValue === 'number') {
+          if (s.limitValue < 1) s.limitValue = 1;
+          if (s.limitValue > 5000) s.limitValue = 5000;
+          if (s.limitType !== CONFIG.LIMIT_TYPE.CHAR && s.limitType !== CONFIG.LIMIT_TYPE.BYTE) {
+            s.limitType = CONFIG.LIMIT_TYPE.DEFAULT_LIMIT.type;
+          }
           this.inputLimiter.setLimit(s.limitType, s.limitValue);
           // UI反映
           this.elements.limitTypeSelect.value = s.limitType;
@@ -232,50 +237,55 @@ export class AppController {
     if (!this.authManager.isAuthenticated()) {
       alert('同期するにはログインが必要です');
       return;
-    }
-
-    try {
-      this.updateSyncStatus('同期中...');
-      await this.transitionTo(CONFIG.APP_STATE.SYNCING);
-      
-      const success = await this.syncManager.syncToCloud();
-      
-      if (success) {
-        await this.transitionTo(CONFIG.APP_STATE.SYNCED);
-        this.updateSyncStatus('同期完了');
+    }else{
+      try {
+        this.updateSyncStatus('同期中...');
+        await this.transitionTo(CONFIG.APP_STATE.SYNCING);
         
-        // クラウドから再読み込みして最新化
-        const cloudData = await this.cloudRepo.read();
-        if (cloudData) {
-          this.currentMemo = Memo.fromJSON(cloudData.memo);
-          // cloud に含まれる settings があれば InputLimiter と UI に反映
-          if (cloudData.settings) {
-            try {
-              const s = cloudData.settings;
-              this.inputLimiter.setLimit(s.limitType || CONFIG.DEFAULT_LIMIT.type, s.limitValue || CONFIG.DEFAULT_LIMIT.value);
-              // UI要素も更新
-              if (this.elements.limitTypeSelect) this.elements.limitTypeSelect.value = this.inputLimiter.limitType;
-              if (this.elements.limitValueInput) this.elements.limitValueInput.value = this.inputLimiter.limitValue;
-              // 永続化して localRepo と整合させる
+        const success = await this.syncManager.syncToCloud();
+        
+        if (success) {
+          await this.transitionTo(CONFIG.APP_STATE.SYNCED);
+          this.updateSyncStatus('同期完了');
+          
+          // クラウドから再読み込みして最新化
+          const cloudData = await this.cloudRepo.read();
+          if (cloudData) {
+            this.currentMemo = Memo.fromJSON(cloudData.memo);
+            // cloud に含まれる settings があれば InputLimiter と UI に反映
+            if (cloudData.settings) {
               try {
-                const existing = this.localRepo.load() || this.localRepo._createInitialData();
-                existing.settings = { limitType: this.inputLimiter.limitType, limitValue: this.inputLimiter.limitValue };
-                this.localRepo.save(existing);
+                const s = cloudData.settings;
+                if (s && typeof s.limitType === 'string' && typeof s.limitValue === 'number') {
+                  if (s.limitValue < 1) s.limitValue = 1;
+                  if (s.limitValue > 5000) s.limitValue = 5000;
+                  if (s.limitType !== CONFIG.LIMIT_TYPE.CHAR && s.limitType !== CONFIG.LIMIT_TYPE.BYTE) s.limitType = CONFIG.DEFAULT_LIMIT.type;
+                  this.inputLimiter.setLimit(s.limitType || CONFIG.DEFAULT_LIMIT.type, s.limitValue || CONFIG.DEFAULT_LIMIT.value);
+                  // UI要素も更新
+                  if (this.elements.limitTypeSelect) this.elements.limitTypeSelect.value = this.inputLimiter.limitType;
+                  if (this.elements.limitValueInput) this.elements.limitValueInput.value = this.inputLimiter.limitValue;
+                }
+                // 永続化して localRepo と整合させる
+                try {
+                  const existing = this.localRepo.load() || this.localRepo._createInitialData();
+                  existing.settings = { limitType: this.inputLimiter.limitType, limitValue: this.inputLimiter.limitValue };
+                  this.localRepo.save(existing);
+                } catch (e) {
+                  console.warn('Failed to persist cloud settings locally:', e);
+                }
               } catch (e) {
-                console.warn('Failed to persist cloud settings locally:', e);
+                console.warn('Failed to apply cloud settings:', e);
               }
-            } catch (e) {
-              console.warn('Failed to apply cloud settings:', e);
             }
+            this.updateUI();
           }
-          this.updateUI();
+        } else {
+          this.updateSyncStatus('同期失敗');
         }
-      } else {
-        this.updateSyncStatus('同期失敗');
+      } catch (error) {
+        console.error('Manual sync failed:', error);
+        this.updateSyncStatus('同期エラー: ' + error.message);
       }
-    } catch (error) {
-      console.error('Manual sync failed:', error);
-      this.updateSyncStatus('同期エラー: ' + error.message);
     }
   }
 
@@ -293,7 +303,6 @@ export class AppController {
 
       // ローカルのメモデータも初期化
       this.localRepo.clear();
-      this.currentMemo = new Memo();
       this.localRepo.initialize();
 
       await this.transitionTo(CONFIG.APP_STATE.LOCAL_ONLY);
@@ -370,8 +379,15 @@ export class AppController {
   handleLimitChange() {
     const type = this.elements.limitTypeSelect.value;
     const value = parseInt(this.elements.limitValueInput.value, 10);
+
+    if (value > 5000){
+      console.log('Limit value over 5000 is not allowed.');
+    }
+    else if (value < 1) {
+      console.log('Limit value under 1 is not allowed.');
+    }
     
-    if (value > 0) {
+    else if (value > 0) {
       this.inputLimiter.setLimit(type, value);
       
       // 現在の入力が制限を超えている場合は切り詰め
