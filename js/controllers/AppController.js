@@ -530,7 +530,7 @@ export class AppController {
     this.elements.syncStatus.textContent = message;
     setTimeout(() => {
       if (this.elements.syncStatus.textContent === message) {
-        this.elements.syncStatus.textContent = '';
+        this.elements.syncStatus.textContent = '　';
       }
     }, 3000);
   }
