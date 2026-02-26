@@ -71,8 +71,21 @@
           <button id="loginBtn" class="btn btn-primary">GitHub でログイン</button>
           <button id="logoutBtn" class="btn btn-secondary" style="display: none;">ログアウト</button>
           <button id="syncBtn" class="btn btn-sync" style="display: none;">🔄 同期</button>
+          <button id="deleteAccountBtn" class="btn btn-danger" style="display: none;">アカウント削除</button>
         </div>
         <div id="syncStatus" class="sync-status"></div>
+      </section>
+      <section class="local-section">
+        <h2>ローカル</h2>
+        <button id="clearMemoBtn" class="btn btn-warning">ローカルデータ削除</button>
+        <div id="clearMemoConfirm"
+          style="display:none;margin-top:8px;padding:8px;border:1px solid #e0e0e0;background:#fff8e1;">
+          <div>ローカルに保存されたメモを完全に削除します。復元できません。よろしいですか？</div>
+          <div style="margin-top:8px;">
+            <button id="confirmClearMemoBtn" class="btn">削除する</button>
+            <button id="cancelClearMemoBtn" class="btn" style="margin-left:8px;">キャンセル</button>
+          </div>
+        </div>
       </section>
 
       <!-- 説明 -->
@@ -104,6 +117,7 @@
 
     <footer>
       <p>&copy; 2026 Memo App - n文字制限メモアプリ</p>
+      <p><a href="privacy.html" target="_blank" rel="noopener">プライバシーポリシー</a></p>
     </footer>
   </div>
 

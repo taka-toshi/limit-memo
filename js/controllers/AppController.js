@@ -102,6 +102,11 @@ export class AppController {
       loginBtn: document.getElementById('loginBtn'),
       logoutBtn: document.getElementById('logoutBtn'),
       syncBtn: document.getElementById('syncBtn'),
+      deleteAccountBtn: document.getElementById('deleteAccountBtn'),
+      clearMemoBtn: document.getElementById('clearMemoBtn'),
+      clearMemoConfirm: document.getElementById('clearMemoConfirm'),
+      confirmClearMemoBtn: document.getElementById('confirmClearMemoBtn'),
+      cancelClearMemoBtn: document.getElementById('cancelClearMemoBtn'),
       limitTypeSelect: document.getElementById('limitType'),
       limitValueInput: document.getElementById('limitValue'),
       offlineIndicator: document.getElementById('offlineIndicator')
@@ -126,6 +131,32 @@ export class AppController {
     this.elements.syncBtn.addEventListener('click', () => {
       this.handleManualSync();
     });
+
+    // アカウント削除ボタン
+    if (this.elements.deleteAccountBtn) {
+      this.elements.deleteAccountBtn.addEventListener('click', () => {
+        this.handleAccountDelete();
+      });
+    }
+
+    // ローカルデータ削除（インページ確認）
+    if (this.elements.clearMemoBtn) {
+      this.elements.clearMemoBtn.addEventListener('click', () => {
+        if (this.elements.clearMemoConfirm) this.elements.clearMemoConfirm.style.display = 'block';
+      });
+    }
+
+    if (this.elements.cancelClearMemoBtn) {
+      this.elements.cancelClearMemoBtn.addEventListener('click', () => {
+        if (this.elements.clearMemoConfirm) this.elements.clearMemoConfirm.style.display = 'none';
+      });
+    }
+
+    if (this.elements.confirmClearMemoBtn) {
+      this.elements.confirmClearMemoBtn.addEventListener('click', () => {
+        this.handleClearMemo();
+      });
+    }
 
     // 制限タイプ変更
     this.elements.limitTypeSelect.addEventListener('change', (e) => {
@@ -229,6 +260,91 @@ export class AppController {
   }
 
   /**
+   * アカウント削除処理
+   */
+  async handleAccountDelete() {
+    if (!confirm('アカウントを完全に削除しますか？この操作は取り消せません。')) {
+      return;
+    }
+
+    try {
+      this.updateSyncStatus('アカウント削除中...');
+      await this.authManager.deleteAccount();
+
+      // ローカルのメモデータも初期化
+      this.localRepo.clear();
+      this.currentMemo = new Memo();
+      this.localRepo.initialize();
+
+      await this.transitionTo(CONFIG.APP_STATE.LOCAL_ONLY);
+      this.updateUI();
+      this.updateSyncStatus('アカウントを削除しました');
+      alert('アカウントおよびローカルデータを削除しました');
+    } catch (error) {
+      console.error('Account delete failed:', error);
+      alert('アカウント削除に失敗しました: ' + (error.message || error));
+      this.updateSyncStatus('アカウント削除失敗');
+    }
+  }
+
+  /**
+   * ローカルメモ削除（ユーザー操作：インページ確認で実行）
+   */
+  async handleClearMemo() {
+    try {
+      if (this.elements.clearMemoConfirm) this.elements.clearMemoConfirm.style.display = 'none';
+      this.updateSyncStatus('ローカルデータ削除中...');
+
+      // ローカルのメモデータを削除/初期化
+      try {
+        this.localRepo.clear();
+        this.localRepo.initialize();
+      } catch (e) {
+        console.warn('localRepo clear/initialize failed:', e);
+      }
+
+      // メモ内容をクリア
+      this.currentMemo = new Memo();
+
+      // 入力制限（タイプ・値）をデフォルトに戻す
+      try {
+        this.inputLimiter.setLimit(CONFIG.DEFAULT_LIMIT.type, CONFIG.DEFAULT_LIMIT.value);
+        this.elements.limitTypeSelect.value = CONFIG.DEFAULT_LIMIT.type;
+        this.elements.limitValueInput.value = CONFIG.DEFAULT_LIMIT.value;
+        localStorage.removeItem(CONFIG.SETTINGS_KEY);
+      } catch (e) {
+        console.warn('Failed to reset settings:', e);
+      }
+
+      // GitHub 連携情報を削除（アクセストークン・gist id 等）
+      try {
+        // AuthManager.logout() は Firebase のサインアウトと localStorage 削除を行う
+        if (this.authManager && typeof this.authManager.logout === 'function') {
+          await this.authManager.logout();
+        } else {
+          localStorage.removeItem(CONFIG.AUTH_KEY);
+          localStorage.removeItem('gist_id');
+        }
+      } catch (e) {
+        console.warn('Failed to remove auth data:', e);
+        // フォールバックで手動削除
+        try { localStorage.removeItem(CONFIG.AUTH_KEY); localStorage.removeItem('gist_id'); } catch (_) {}
+      }
+
+      // UI をログイン可能なローカルのみの状態へ
+      await this.transitionTo(CONFIG.APP_STATE.LOCAL_ONLY);
+      this.updateUI();
+
+      this.updateSyncStatus('ローカルデータを削除しました');
+      alert('ローカルに保存されたメモと設定、GitHub連携を削除しました');
+    } catch (error) {
+      console.error('Clear memo failed:', error);
+      alert('ローカルデータ削除に失敗しました: ' + (error.message || error));
+      this.updateSyncStatus('ローカルデータ削除失敗');
+    }
+  }
+
+  /**
    * 入力制限変更処理
    */
   handleLimitChange() {
@@ -326,6 +442,10 @@ export class AppController {
     this.elements.charCount.textContent = `${charCount} 文字`;
     this.elements.byteCount.textContent = `${byteCount} バイト`;
     
+    // 入力設定の UI 値を現在の limiter 状態で上書き（クリア後などの同期用）
+    if (this.elements.limitTypeSelect) this.elements.limitTypeSelect.value = this.inputLimiter.limitType;
+    if (this.elements.limitValueInput) this.elements.limitValueInput.value = this.inputLimiter.limitValue;
+
     // 制限情報表示
     const limitType = this.inputLimiter.limitType === CONFIG.LIMIT_TYPE.CHAR ? '文字' : 'バイト';
     this.elements.limitInfo.textContent = 

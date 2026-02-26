@@ -119,6 +119,60 @@ export class AuthManager {
     localStorage.removeItem('gist_id');
   }
 
+  /**
+   * アカウント削除（Firebase Authentication のユーザー削除＋クライアント側データ消去）
+   * - Firebase の recent login 要件でエラーが出る場合は再認証（popup）を試みます
+   */
+  async deleteAccount() {
+    if (!window.firebase || !window.firebase.auth) {
+      throw new Error('Firebase SDK が読み込まれていません');
+    }
+
+    const user = window.firebase.auth().currentUser;
+    if (!user) {
+      throw new Error('ログインユーザーが見つかりません');
+    }
+
+    try {
+      await user.delete();
+    } catch (err) {
+      // 再認証が必要なケース
+      if (err && err.code === 'auth/requires-recent-login') {
+        try {
+          const provider = new window.firebase.auth.GithubAuthProvider();
+          provider.addScope('gist');
+          await window.firebase.auth().signInWithPopup(provider);
+          // 再度取得して削除
+          const reUser = window.firebase.auth().currentUser;
+          if (reUser) {
+            await reUser.delete();
+          } else {
+            throw new Error('再認証後にユーザーが見つかりません');
+          }
+        } catch (reauthErr) {
+          console.error('再認証に失敗しました:', reauthErr);
+          throw new Error('アカウント削除に必要な再認証に失敗しました');
+        }
+      } else {
+        console.error('ユーザー削除エラー:', err);
+        throw new Error('アカウント削除に失敗しました: ' + (err && err.message ? err.message : err));
+      }
+    }
+
+    // ローカルデータの消去
+    try {
+      localStorage.removeItem(CONFIG.AUTH_KEY);
+      localStorage.removeItem(CONFIG.STORAGE_KEY);
+      localStorage.removeItem('gist_id');
+    } catch (e) {
+      console.warn('ローカルデータに保存されている認証情報の削除に失敗しました:', e);
+    }
+
+    this.accessToken = null;
+    this.authState = 'unauthenticated';
+    return true;
+  }
+
   isAuthenticated() {
     return this.authState === 'authenticated' && this.accessToken !== null;
   }
