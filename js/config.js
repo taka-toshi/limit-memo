@@ -45,22 +45,15 @@ export const CONFIG = {
     API_BASE: 'https://api.github.com',
     SCOPES: 'gist',
     // GitHub Device Flow / OAuth 用の Client ID (GitHub OAuth App の Client ID)
-    CLIENT_ID: 'Ov23liuug3bKnQRzhFNI' ,
+    CLIENT_ID: 'Ov23lijn05y8VNP5pnRg' ,
     FILENAME: 'memo.json'
   }
   ,
   // Firebase 設定（Firebase Authentication を使用する場合にここを埋める）
-    // Set your Firebase Web App config here. Example values below show the
-    // shape of the object — replace with values from Firebase Console → Project Settings → SDK setup.
-    // NOTE: The SDK (firebase-app / firebase-auth) is loaded from CDN in index.html.
-    FIREBASE: {
-      // apiKey: 'AIza...your_api_key...',
-      // authDomain: 'your-project.firebaseapp.com',
-      // projectId: 'your-project-id',
-      // appId: '1:1234567890:web:abcdef123456'
-      apiKey: '',
-      authDomain: '',
-      projectId: '',
-      appId: ''
-    }
+  FIREBASE: {
+    apiKey: "AIzaSyBtPl8g3viM2O76VXWalW8n9dPvU7Tykvs",
+    authDomain: "memo-app-19bb3.firebaseapp.com",
+    projectId: "memo-app-19bb3",
+    appId: "1:113269673283:web:e42960566b98e36d2173f6"
+  }
 };
