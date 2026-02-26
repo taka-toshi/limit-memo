@@ -499,6 +499,7 @@ export class AppController {
     this.elements.loginBtn.style.display = isAuthenticated ? 'none' : 'inline-block';
     this.elements.logoutBtn.style.display = isAuthenticated ? 'inline-block' : 'none';
     this.elements.syncBtn.style.display = isAuthenticated ? 'inline-block' : 'none';
+    this.elements.deleteAccountBtn.style.display = isAuthenticated ? 'inline-block' : 'none';
     
     // オフライン表示
     this.elements.offlineIndicator.style.display = 

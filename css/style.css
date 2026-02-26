@@ -188,6 +188,11 @@ section h2 {
   color: white;
 }
 
+.btn-danger {
+  background-color: var(--danger-color);
+  color: white;
+}
+
 .sync-status {
   min-height: 24px;
   padding: 8px;
@@ -223,9 +228,9 @@ section h2 {
 }
 
 .note {
-  background-color: #fff3e0;
+  background-color: #f5f5f5;
   padding: 10px;
-  border-left: 4px solid var(--warning-color);
+  border-left: 4px solid var(--success-color);
   margin-top: 15px;
   font-size: 0.9rem;
 }

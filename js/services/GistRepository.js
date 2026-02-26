@@ -200,10 +200,10 @@ export class GistRepository extends CloudRepository {
       }
 
       const gists = await response.json();
-      
-      // memo.json を含むGistを探す
+
+      // memo.json を含み、description が一致する Gist を探す
       for (const gist of gists) {
-        if (gist.files[CONFIG.GIST.FILENAME]) {
+        if (gist.files[CONFIG.GIST.FILENAME] && gist.description === 'Memo App Data by taka-toshi') {
           this.gistId = gist.id;
           this._saveGistId();
           return;
@@ -233,7 +233,7 @@ export class GistRepository extends CloudRepository {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          description: 'Memo App Data',
+          description: 'Memo App Data by taka-toshi',
           public: false,
           files: {
             [CONFIG.GIST.FILENAME]: {

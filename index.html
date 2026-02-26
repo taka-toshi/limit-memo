@@ -10,13 +10,10 @@
   <title>Memo App - n文字制限メモ</title>
 
   <!-- PWA Manifest -->
-
-  <!-- Icons -->
-
-  <!-- Stylesheet -->
   <link rel="manifest" href="manifest.json">
+  <!-- Stylesheet -->
   <link rel="stylesheet" href="css/style.css">
-
+  <!-- Icons -->
   <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
 </head>
@@ -45,7 +42,7 @@
           </select>
 
           <label for="limitValue">制限値:</label>
-          <input type="number" id="limitValue" value="200" min="1" max="10000">
+          <input type="number" id="limitValue" value="200" min="1" max="5000">
         </div>
       </section>
 
@@ -73,6 +70,11 @@
           <button id="syncBtn" class="btn btn-sync" style="display: none;">🔄 同期</button>
           <button id="deleteAccountBtn" class="btn btn-danger" style="display: none;">アカウント削除</button>
         </div>
+        <p class="note">
+          参考: gist の内容は <a href="https://gist.github.com/" target="_blank" rel="noopener">https://gist.github.com/</a>
+          の"View your gists"で確認できます。ファイル名は
+          <code>memo.json</code> で、description は変更しないでください。
+        </p>
         <div id="syncStatus" class="sync-status"></div>
       </section>
       <section class="local-section">
@@ -109,9 +111,6 @@
           <li>承認が完了するとポップアップが閉じ、アプリに戻ります</li>
           <li>自動でトークンが取得され、同期が可能になります</li>
         </ol>
-        <p class="note">
-          参考: 開発時の簡易方法として Personal Access Token を一時利用できますが、本番公開アプリでは推奨されません。
-        </p>
       </section>
     </main>
 
