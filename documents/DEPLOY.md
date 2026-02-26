@@ -42,18 +42,17 @@ git push -u origin main
 https://your-username.github.io/memo-app/
 ```
 
-※ 注意: 本リポジトリでは `CONFIG.GIST.CLIENT_ID` を空欄のままコミットしておき、まず GitHub Pages にデプロイして公開URLを確定させるワークフローを想定しています。公開URLが確定したら下記手順で OAuth App を作成し、取得した Client ID を `js/config.js` の `CONFIG.GIST.CLIENT_ID` に追記して再度プッシュしてください。
+※ 注意: 本プロジェクトは現在 Firebase Authentication + GitHub プロバイダを利用する実装です。デプロイ後、Firebase コンソールで GitHub プロバイダを有効化し、取得した情報を `js/config.js` の `CONFIG.FIREBASE` に設定してください。
 
-OAuth App 作成と Client ID 反映手順（簡易）:
-1. GitHub → Settings → Developer settings → OAuth Apps → New OAuth App
-2. Application name: 任意（例: Memo App）
-3. Homepage URL: 公開された Pages URL（例: https://your-username.github.io/memo-app/）
-4. Authorization callback URL: 任意（Device Flow を使う場合は必須ではありませんが、将来の互換用に `https://your-username.github.io/memo-app/` を指定しておくと良い）
-5. 作成後、表示される Client ID をコピー
-6. `js/config.js` の `CONFIG.GIST.CLIENT_ID` に Client ID を貼り付け
-7. 保存してコミット・プッシュ
+Firebase の簡易設定手順:
+1. Firebase コンソールで新しいプロジェクトを作成
+2. Authentication → Sign-in method → GitHub を有効化
+3. GitHub の設定画面で OAuth App を作成し、Client ID / Client Secret を取得（Callback URL は Firebase コンソールに表示されるものを使用）
+4. Firebase コンソールの GitHub プロバイダ設定に Client ID / Client Secret を入力して保存
+5. Firebase プロジェクトの設定から Web アプリを追加し、表示される `apiKey`, `authDomain`, `projectId`, `appId` を `js/config.js` の `CONFIG.FIREBASE` に設定
+6. 保存してコミット・プッシュ
 
-このワークフローにより、公開前に Client ID をリポジトリに含めずに済み、Pages URL を確定してから設定できます。
+このワークフローにより、Firebase 経由で GitHub OAuth を利用でき、ブラウザ側の CORS 問題を回避できます。
 
 ### カスタムドメイン設定
 

@@ -85,16 +85,16 @@
           <li><strong>PWA対応:</strong> ホーム画面に追加してアプリのように使用できます</li>
         </ul>
 
-        <h3>認証（推奨: GitHub Device Flow）</h3>
+        <h3>認証（Firebase + GitHub）</h3>
         <p>
-          このアプリは GitHub の <strong>Device Flow</strong>
-          を使ってログインします。ボタンを押すと、アプリが確認用のURLとコードを表示します。ブラウザで表示されたURLにアクセスし、コードを入力して承認してください。
+          このアプリは Firebase Authentication を通じて GitHub にサインインします。
+          「GitHub でログイン」ボタンを押すと、GitHub の認可画面がポップアップで開きます。
         </p>
         <ol>
           <li>画面の「GitHub でログイン」ボタンをクリック</li>
-          <li>表示されるURL（https://github.com/login/device）にアクセス</li>
-          <li>表示されたコード（例: XXXX-YYYY）を入力して承認</li>
-          <li>承認が完了するとアプリに戻り、自動でトークンが取得されます</li>
+          <li>表示される GitHub の認可画面でアクセス許可（gist スコープ）を承認</li>
+          <li>承認が完了するとポップアップが閉じ、アプリに戻ります</li>
+          <li>自動でトークンが取得され、同期が可能になります</li>
         </ol>
         <p class="note">
           参考: 開発時の簡易方法として Personal Access Token を一時利用できますが、本番公開アプリでは推奨されません。
@@ -108,6 +108,12 @@
   </div>
 
   <!-- JavaScript (ES Modules) -->
+  <!-- Firebase compat SDK を CDN から読み込みします.
+       Firebase のプロジェクト設定（apiKey 等）は `js/config.js` の
+       `CONFIG.FIREBASE` に記述してください。Auth の初期化は
+       `js/services/AuthManager.js` が行います。 -->
+  <script src="https://www.gstatic.com/firebasejs/12.9.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.9.0/firebase-auth-compat.js"></script>
   <script type="module" src="js/app.js"></script>
 </body>
 

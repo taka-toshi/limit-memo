@@ -245,15 +245,15 @@ if (localRevision > cloudRevision) {
 
 ## OAuth連携の実装
 
-本プロジェクトでは、公開された静的サイト向けに **GitHub Device Flow** を既定の認証方式として採用しています。実装は `js/services/AuthManager.js` の `loginWithGitHubDeviceFlow()` を参照してください。
+本プロジェクトは Firebase Authentication の GitHub プロバイダを利用する実装に変更しました。実装は `js/services/AuthManager.js` の `loginWithFirebase()` を参照してください。
 
 ### 採用理由と注意点
 
-- Device Flow は Client Secret を不要とし、サーバーレス／静的ホスティング環境で安全に動作します。
-- トークンは `localStorage` に保存されますが、XSS 対策（CSP、依存ライブラリの最新化等）を必須としてください。
-- 開発時に短期的に Personal Access Token を用いる場合は可能ですが、本番公開アプリでは推奨しません。
+- Firebase Auth を利用することでクライアント側でのCORS問題を回避し、静的ホスティングでも GitHub OAuth を簡便に利用できます。
+- GitHub のスコープは `gist` を要求します（Gist 読み書き）。
+- アクセストークンは localStorage に保存します。
 
-必要に応じて将来、サーバー側でトークン管理を行う OAuth Authorization Code フローへ移行可能です。
+将来的にサーバーサイドでトークン管理を行いたい場合は、OAuth Authorization Code フローへ移行することも可能です。
 
 ## テスト方法
 

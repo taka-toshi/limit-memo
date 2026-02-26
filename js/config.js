@@ -48,4 +48,19 @@ export const CONFIG = {
     CLIENT_ID: 'Ov23liuug3bKnQRzhFNI' ,
     FILENAME: 'memo.json'
   }
+  ,
+  // Firebase 設定（Firebase Authentication を使用する場合にここを埋める）
+    // Set your Firebase Web App config here. Example values below show the
+    // shape of the object — replace with values from Firebase Console → Project Settings → SDK setup.
+    // NOTE: The SDK (firebase-app / firebase-auth) is loaded from CDN in index.html.
+    FIREBASE: {
+      // apiKey: 'AIza...your_api_key...',
+      // authDomain: 'your-project.firebaseapp.com',
+      // projectId: 'your-project-id',
+      // appId: '1:1234567890:web:abcdef123456'
+      apiKey: '',
+      authDomain: '',
+      projectId: '',
+      appId: ''
+    }
 };

@@ -218,27 +218,21 @@ revision +1, lastModifiedBy='local'
 ローカルの変更をクラウドに反映
 ```
 
-## 認証フロー（現在: Device Flow）
+## 認証フロー（現在: Firebase + GitHub）
 
-このプロジェクトでは、公開された静的サイト向けに **GitHub Device Flow** を採用しています。フローの概要は以下の通りです：
+このプロジェクトは Firebase Authentication の GitHub プロバイダを使う方式に移行しています。概要は以下の通りです：
 
 ```
-1. アプリがデバイスコードとユーザーコードをリクエスト
-  POST https://github.com/login/device/code
-2. アプリがユーザーに検証URL（https://github.com/login/device）とコードを表示
-3. ユーザーが別タブでURLにアクセスし、コードを入力して承認
-4. アプリがポーリングでトークンを取得
-  POST https://github.com/login/oauth/access_token
-5. 成功 → アクセストークンを受け取り localStorage に保存
+1. ユーザーがアプリで「GitHub でログイン」をクリック
+2. Firebase のポップアップで GitHub の認可画面が表示される
+3. ユーザーが権限（gist スコープ）を承認
+4. Firebase が OAuth 処理を行い、アクセストークンをクライアントに返す
+5. クライアント側は受け取ったアクセストークンを利用して Gist API にアクセス
 ```
 
 メリット:
-- Client Secret を不要とし、サーバーがなくても安全に認証できる
-- ユーザーは GitHub 上で直接承認するためトークン漏洩リスクが低い
-
-注意点:
-- ユーザーは別タブで承認操作が必要（UX上の負担）
-- トークンはブラウザに保存されるため XSS 対策は必須
+- ブラウザから直接 GitHub のエンドポイントにアクセスすることで生じる CORS 問題を回避できる
+- Firebase の管理画面で認証プロバイダを一元管理できる
 
 ## Gist API との連携
 

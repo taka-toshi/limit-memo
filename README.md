@@ -95,14 +95,14 @@ memo-app/
 
 ## GitHub認証の設定
 
-### 認証（推奨: GitHub Device Flow）
+### 認証（Firebase + GitHub）
 
-本アプリは公開された静的サイト向けに GitHub Device Flow を既定の認証方式として採用しています。
+本アプリは Firebase Authentication の GitHub プロバイダを利用する実装に変更しました。
 
-- 利点: Client Secret不要でサーバーを用意せずに安全に認可が可能
-- ユーザーは GitHub 上で直接承認するためトークンの手動管理が不要
+- 利点: Firebase を介することでブラウザ側から直接 GitHub の OAuth エンドポイントに対して発生する CORS 問題を回避できます。
+- 事前に Firebase コンソールで GitHub プロバイダを有効にし、`CONFIG.FIREBASE` に設定を入れてください。
 
-開発時のみ一時的に Personal Access Token を使うことは可能ですが、本番公開時は Device Flow を推奨します。デプロイ後に OAuth App を作成して `CONFIG.GIST.CLIENT_ID` を設定するワークフローについては `documents/DEPLOY.md` を参照してください。
+開発時に Personal Access Token を一時的に使うことは可能ですが、運用時は Firebase 経由の OAuth サインインを推奨します。デプロイや Firebase 設定については `documents/DEPLOY.md` を参照してください。
 
 ## PWA インストール方法
 

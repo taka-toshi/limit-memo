@@ -168,8 +168,8 @@ export class AppController {
   async handleLogin() {
     try {
       this.updateSyncStatus('認証中...');
-      // Device Flow を使用
-      await this.authManager.loginWithGitHubDeviceFlow();
+      // Firebase GitHub 認証を使用
+      await this.authManager.loginWithFirebase();
       await this.transitionTo(CONFIG.APP_STATE.AUTHENTICATED);
       await this.initialSync();
       this.updateSyncStatus('ログイン成功');
