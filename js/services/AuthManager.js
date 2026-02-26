@@ -131,4 +131,4 @@ export class AuthManager {
     return this.authState;
   }
 }
-}
+
