@@ -19,6 +19,7 @@ export class SyncManager {
     this.cloudRepo = cloudRepo;
     this.syncState = 'idle'; // idle / syncing / synced / error
     this.lastSyncedAt = null;
+    this.lastCloudData = null;
   }
 
   /**
@@ -41,6 +42,7 @@ export class SyncManager {
 
       try {
         cloudData = await this.cloudRepo.read();
+        this.lastCloudData = cloudData;
       } catch (error) {
         console.error('Cloud read failed:', error);
         // クラウド読み込み失敗時はローカルを使用
@@ -83,9 +85,13 @@ export class SyncManager {
         await this.cloudRepo.write(resolvedData);
         resolvedData.sync.lastSyncedAt = new Date().toISOString();
         this.localRepo.save(resolvedData);
+        // after write, cloud now reflects local
+        this.lastCloudData = resolvedData;
       } else {
         // クラウドが新しい → ローカルへ書き込み
         this.localRepo.save(resolvedData);
+        // cloudData is the resolvedData
+        this.lastCloudData = resolvedData;
       }
 
       this.syncState = 'synced';
@@ -123,6 +129,7 @@ export class SyncManager {
       let cloudData = null;
       try {
         cloudData = await this.cloudRepo.read();
+        this.lastCloudData = cloudData;
       } catch (error) {
         console.error('Cloud read failed during sync:', error);
       }
@@ -135,13 +142,16 @@ export class SyncManager {
           this.localRepo.save(resolved);
           this.syncState = 'synced';
           this.lastSyncedAt = resolved.sync.lastSyncedAt;
+          // ensure lastCloudData reflects resolved cloud content
+          this.lastCloudData = resolved;
           return true;
         }
       }
 
       // ローカルをクラウドに書き込み
       await this.cloudRepo.write(localData);
-      
+      // after successful write, cloud equals local
+      this.lastCloudData = localData;
       // 同期時刻を更新
       localData.sync.lastSyncedAt = new Date().toISOString();
       this.localRepo.save(localData);

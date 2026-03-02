@@ -85,15 +85,50 @@
         <button id="clearMemoBtn" class="btn btn-primary">ローカルデータ削除</button>
       </section>
 
-      <!-- モーダル: ローカルデータ削除確認 -->
-      <div id="clearMemoConfirm" aria-hidden="true" role="dialog" aria-modal="true" inert style="display:none;">
-        <div class="modal-backdrop"></div>
-        <div class="modal-box" role="document">
-          <h3>ローカルデータの削除</h3>
+      <!-- モーダル: ローカルデータ削除確認 (統一スタイル) -->
+      <div id="clearMemoConfirm" class="modal" aria-hidden="true" role="dialog" aria-modal="true" inert
+        style="display:none;">
+        <div class="modal-content" role="document">
+          <div class="modal-header">ローカルデータの削除</div>
           <p>ローカルに保存されたメモを完全に削除します。復元できません。<br>また、クラウドとの連携が解除されます。<br>よろしいですか？</p>
-          <div class="local-confirm-btns">
-            <button id="confirmClearMemoBtn" class="btn btn-danger">削除する</button>
-            <button id="cancelClearMemoBtn" class="btn">キャンセル</button>
+          <div class="modal-buttons">
+            <button id="confirmClearMemoBtn" class="confirm-btn btn btn-danger">削除する</button>
+            <button id="cancelClearMemoBtn" class="cancel-btn btn">キャンセル</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Logout Confirmation Modal -->
+      <div id="logoutConfirmModal" class="modal">
+        <div class="modal-content">
+          <div class="modal-header">ログアウト確認</div>
+          <p>ログアウトしますか？ローカルのデータは保持されます。</p>
+          <div class="modal-buttons">
+            <button class="confirm-btn">ログアウト</button>
+            <button class="cancel-btn">キャンセル</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Logout Success Modal -->
+      <div id="logoutSuccessModal" class="modal">
+        <div class="modal-content">
+          <div class="modal-header">ログアウト成功</div>
+          <p>GitHub連携を削除しました。</p>
+          <div class="modal-buttons">
+            <button class="close-btn">閉じる</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Account Deletion Confirmation Modal -->
+      <div id="accountDeleteConfirmModal" class="modal">
+        <div class="modal-content">
+          <div class="modal-header">アカウント削除確認</div>
+          <p>アカウントを完全に削除しますか？この操作は取り消せません。</p>
+          <div class="modal-buttons">
+            <button class="confirm-btn">削除</button>
+            <button class="cancel-btn">キャンセル</button>
           </div>
         </div>
       </div>

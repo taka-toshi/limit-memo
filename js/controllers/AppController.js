@@ -114,7 +114,10 @@ export class AppController {
       cancelClearMemoBtn: document.getElementById('cancelClearMemoBtn'),
       limitTypeSelect: document.getElementById('limitType'),
       limitValueInput: document.getElementById('limitValue'),
-      offlineIndicator: document.getElementById('offlineIndicator')
+      offlineIndicator: document.getElementById('offlineIndicator'),
+      logoutConfirmModal: document.getElementById('logoutConfirmModal'),
+      accountDeleteConfirmModal: document.getElementById('accountDeleteConfirmModal'),
+      logoutSuccessModal: document.getElementById('logoutSuccessModal')
     };
 
     // メモ入力イベント
@@ -155,7 +158,7 @@ export class AppController {
       openBtn.addEventListener('click', () => {
         if (!modal) return;
 
-        modal.style.display = 'block';
+        modal.style.display = 'flex';
         modal.setAttribute('aria-hidden', 'false');
         modal.removeAttribute('inert');
 
@@ -169,12 +172,15 @@ export class AppController {
       cancelBtn.addEventListener('click', () => {
         if (!modal) return;
 
+        // blur any focused element inside modal first
+        try { cancelBtn.blur(); } catch (e) {}
+        try { confirmBtn.blur(); } catch (e) {}
+        // return focus to opener before hiding modal
+        try { openBtn?.focus(); } catch (e) {}
+
         modal.style.display = 'none';
         modal.setAttribute('aria-hidden', 'true');
         modal.setAttribute('inert', '');
-
-        // 元のボタンへフォーカスを戻す
-        openBtn?.focus();
       });
     }
 
@@ -185,12 +191,15 @@ export class AppController {
 
         if (!modal) return;
 
+        // blur focused elements inside modal
+        try { confirmBtn.blur(); } catch (e) {}
+        try { cancelBtn.blur(); } catch (e) {}
+        // return focus to opener before hiding
+        try { openBtn?.focus(); } catch (e) {}
+
         modal.style.display = 'none';
         modal.setAttribute('aria-hidden', 'true');
         modal.setAttribute('inert', '');
-
-        // フォーカス戻す
-        openBtn?.focus();
       });
     }
 
@@ -251,14 +260,67 @@ export class AppController {
    * ログアウト処理
    */
   handleLogout() {
-    if (!confirm('ログアウトしますか？ローカルのデータは保持されます。')) {
-      return;
-    }
-    
-    this.authManager.logout();
-    this.transitionTo(CONFIG.APP_STATE.LOCAL_ONLY);
-    this.updateUI();
-    this.updateSyncStatus('ログアウトしました');
+    const modal = this.elements.logoutConfirmModal;
+    const opener = this.elements.logoutBtn; // where focus returns when modal closes
+    modal.style.display = 'flex';
+    modal.setAttribute('aria-hidden', 'false');
+    modal.removeAttribute('inert');
+
+    const confirmBtn = modal.querySelector('.confirm-btn');
+    const cancelBtn = modal.querySelector('.cancel-btn');
+
+    confirmBtn?.focus();
+
+    const closeModal = () => {
+      // ensure no focused descendant remains inside modal
+      try { confirmBtn?.blur(); } catch (e) {}
+      try { cancelBtn?.blur(); } catch (e) {}
+      // move focus back to opener before hiding to avoid aria-hidden on focused ancestor
+      try { opener?.focus(); } catch (e) { /* ignore */ }
+      modal.style.display = 'none';
+      modal.setAttribute('aria-hidden', 'true');
+      modal.setAttribute('inert', '');
+      confirmBtn.removeEventListener('click', onConfirm);
+      cancelBtn.removeEventListener('click', closeModal);
+    };
+
+    const onConfirm = async () => {
+      try {
+        await this.authManager.logout();
+        await this.transitionTo(CONFIG.APP_STATE.LOCAL_ONLY);
+        this.updateUI();
+        this.updateSyncStatus('ログアウトしました');
+      } catch (e) {
+        console.error('Logout failed:', e);
+        this.updateSyncStatus('ログアウト失敗');
+      } finally {
+        closeModal();
+      }
+
+      // Show modal for logout success
+      const successModal = this.elements.logoutSuccessModal;
+      if (successModal) {
+        successModal.style.display = 'flex';
+        successModal.setAttribute('aria-hidden', 'false');
+        successModal.removeAttribute('inert');
+        const successCloseBtn = successModal.querySelector('.close-btn');
+        const closeSuccess = () => {
+          // ensure focus is removed from close button
+          try { successCloseBtn?.blur(); } catch (e) {}
+          // return focus to opener when closing success modal
+          try { opener?.focus(); } catch (e) { }
+          successModal.style.display = 'none';
+          successModal.setAttribute('aria-hidden', 'true');
+          successModal.setAttribute('inert', '');
+          successCloseBtn.removeEventListener('click', closeSuccess);
+        };
+        successCloseBtn.addEventListener('click', closeSuccess);
+        successCloseBtn.focus();
+      }
+    };
+
+    confirmBtn.addEventListener('click', onConfirm);
+    cancelBtn.addEventListener('click', closeModal);
   }
 
   /**
@@ -274,13 +336,13 @@ export class AppController {
         await this.transitionTo(CONFIG.APP_STATE.SYNCING);
         
         const success = await this.syncManager.syncToCloud();
-        
+
         if (success) {
           await this.transitionTo(CONFIG.APP_STATE.SYNCED);
           this.updateSyncStatus('同期完了');
-          
-          // クラウドから再読み込みして最新化
-          const cloudData = await this.cloudRepo.read();
+
+          // 直近のクラウドデータは SyncManager に保存しているため、再取得を避ける
+          const cloudData = this.syncManager.lastCloudData || await this.cloudRepo.read();
           if (cloudData) {
             this.currentMemo = Memo.fromJSON(cloudData.memo);
             // cloud に含まれる settings があれば InputLimiter と UI に反映
@@ -324,27 +386,49 @@ export class AppController {
    * アカウント削除処理
    */
   async handleAccountDelete() {
-    if (!confirm('アカウントを完全に削除しますか？この操作は取り消せません。')) {
-      return;
-    }
+    const modal = this.elements.accountDeleteConfirmModal;
+    const opener = this.elements.deleteAccountBtn;
+    modal.style.display = 'flex';
+    modal.setAttribute('aria-hidden', 'false');
+    modal.removeAttribute('inert');
 
-    try {
-      this.updateSyncStatus('アカウント削除中...');
-      await this.authManager.deleteAccount();
+    const confirmBtn = modal.querySelector('.confirm-btn');
+    const cancelBtn = modal.querySelector('.cancel-btn');
 
-      // ローカルのメモデータも初期化
-      this.localRepo.clear();
-      this.localRepo.initialize();
+    const closeModal = () => {
+      // ensure no focused descendant remains inside modal
+      try { confirmBtn?.blur(); } catch (e) {}
+      try { cancelBtn?.blur(); } catch (e) {}
+      // return focus to opener before hiding
+      try { opener?.focus(); } catch (e) { }
+      modal.style.display = 'none';
+      modal.setAttribute('aria-hidden', 'true');
+      modal.setAttribute('inert', '');
+      confirmBtn.removeEventListener('click', onConfirm);
+      cancelBtn.removeEventListener('click', closeModal);
+    };
 
-      await this.transitionTo(CONFIG.APP_STATE.LOCAL_ONLY);
-      this.updateUI();
-      this.updateSyncStatus('アカウントを削除しました');
-      alert('アカウントおよびローカルデータを削除しました');
-    } catch (error) {
-      console.error('Account delete failed:', error);
-      alert('アカウント削除に失敗しました: ' + (error.message || error));
-      this.updateSyncStatus('アカウント削除失敗');
-    }
+    const onConfirm = async () => {
+      try {
+        this.updateSyncStatus('アカウント削除中...');
+        await this.authManager.deleteAccount();
+
+        this.localRepo.clear();
+        this.localRepo.initialize();
+
+        await this.transitionTo(CONFIG.APP_STATE.LOCAL_ONLY);
+        this.updateUI();
+        this.updateSyncStatus('アカウントを削除しました');
+      } catch (error) {
+        console.error('Account delete failed:', error);
+        this.updateSyncStatus('アカウント削除失敗');
+      } finally {
+        closeModal();
+      }
+    };
+
+    confirmBtn.addEventListener('click', onConfirm);
+    cancelBtn.addEventListener('click', closeModal);
   }
 
   /**
@@ -396,7 +480,6 @@ export class AppController {
       this.updateUI();
 
       this.updateSyncStatus('ローカルデータを削除しました');
-      alert('ローカルに保存されたメモと設定、GitHub連携を削除しました');
     } catch (error) {
       console.error('Clear memo failed:', error);
       alert('ローカルデータ削除に失敗しました: ' + (error.message || error));
