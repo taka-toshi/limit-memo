@@ -22,6 +22,9 @@ export const CONFIG = {
     type: 'CHAR',
     value: 200
   },
+
+  // システムが許容する最大の制限値（ユーザが設定できる上限）
+  MAX_LIMIT_VALUE: 5000,
   
   // 状態定義
   APP_STATE: {

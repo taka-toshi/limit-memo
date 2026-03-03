@@ -8,6 +8,7 @@ import { GistRepository } from '../services/GistRepository.js';
 import { SyncManager } from '../services/SyncManager.js';
 import { AuthManager } from '../services/AuthManager.js';
 import { EncryptionService } from '../services/EncryptionService.js';
+import { sanitizeStringForMemo } from '../services/Sanitizer.js';
 
 /**
  * AppController - UI と内部ロジックの仲介役
@@ -70,7 +71,7 @@ export class AppController {
         const s = JSON.parse(storedSettings);
         if (s && typeof s.limitType === 'string' && typeof s.limitValue === 'number') {
           if (s.limitValue < 1) s.limitValue = 1;
-          if (s.limitValue > 5000) s.limitValue = 5000;
+          if (s.limitValue > CONFIG.MAX_LIMIT_VALUE) s.limitValue = CONFIG.MAX_LIMIT_VALUE;
           if (s.limitType !== CONFIG.LIMIT_TYPE.CHAR && s.limitType !== CONFIG.LIMIT_TYPE.BYTE) {
             s.limitType = CONFIG.LIMIT_TYPE.DEFAULT_LIMIT.type;
           }
@@ -233,6 +234,21 @@ export class AppController {
         await this.handleDecryptMemo();
       });
     }
+
+    // パスワード入力で Enter を押したら自動復号を試みる
+    if (this.elements.encryptionPasswordInput) {
+      this.elements.encryptionPasswordInput.addEventListener('keydown', async (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          try {
+            // まず自動復号を試みる（現在のメモが暗号化されている場合）
+            await this.handleDecryptMemo();
+          } catch (err) {
+            // handleDecryptMemo が内部でエラー処理するためここでは何もしない
+          }
+        }
+      });
+    }
   }
 
   /**
@@ -277,30 +293,70 @@ export class AppController {
   async handleEncryptMemo() {
     try {
       const password = this.elements.encryptionPasswordInput?.value || '';
-      if (!password) {
-        alert('暗号化パスワードを入力してください');
-        return;
-      }
 
       if (!this.encryptionService.isAvailable()) {
         alert('このブラウザでは暗号化機能を利用できません');
         return;
       }
 
-      const source = this.decryptedDraft !== null
-        ? this.decryptedDraft
-        : (this.currentMemo?.content || '');
+      // ケース分岐:
+      // 1) 現在メモが暗号化済み && セッションで復号済み (decryptedDraft !== null)
+      //    - password が空なら平文として保存（暗号化解除）
+      //    - password が入力されていれば decryptedDraft を新しいパスワードで暗号化（パスワード変更）
+      // 2) 現在メモが暗号化済み && セッションで未復号 (decryptedDraft === null)
+      //    - 復号していないため平文が得られず、パスワード変更/削除はできない。先に復号するよう促す。
+      // 3) 現在メモが未暗号化
+      //    - password が空なら何もしない（保存不要）、password があれば現在の平文を暗号化して保存
 
-      const encryptedPayload = await this.encryptionService.encrypt(source, password);
-      const encryptedContent = this.encryptionService.serialize(encryptedPayload);
+      const encryptedNow = this.isCurrentMemoEncrypted();
 
-      this.currentMemo.update(encryptedContent);
-      this.localRepo.saveMemo(this.currentMemo);
-      this.decryptedDraft = source;
+      if (encryptedNow) {
+        if (this.decryptedDraft === null) {
+          alert('現在のメモは暗号化されています。パスワードを入力して復号してからパスワード変更または暗号解除を行ってください。');
+          return;
+        }
 
-      this.updateUI();
-      this.scheduleAutoSync();
-      this.updateSyncStatus('暗号化して保存（表示は平文）');
+        // decryptedDraft がある -> 明文がある
+        const source = this.decryptedDraft;
+        if (!password) {
+          // 平文として保存（暗号解除）
+          this.currentMemo.update(source);
+          this.localRepo.saveMemo(this.currentMemo);
+          // セッションの復号バッファはクリア
+          this.decryptedDraft = null;
+          this.updateUI();
+          this.scheduleAutoSync();
+          this.updateSyncStatus('暗号解除して平文として保存しました');
+          return;
+        } else {
+          // 新しいパスワードで再暗号化（パスワード変更）
+          const encryptedPayload = await this.encryptionService.encrypt(source, password);
+          const encryptedContent = this.encryptionService.serialize(encryptedPayload);
+          this.currentMemo.update(encryptedContent);
+          this.localRepo.saveMemo(this.currentMemo);
+          // decryptedDraft は表示用に保持
+          this.updateUI();
+          this.scheduleAutoSync();
+          this.updateSyncStatus('新しいパスワードで暗号化して保存しました');
+          return;
+        }
+      } else {
+        // 未暗号化のメモ
+        const source = this.currentMemo?.content || '';
+        if (!password) {
+          alert('暗号化パスワードを入力してください');
+          return;
+        }
+        const encryptedPayload = await this.encryptionService.encrypt(source, password);
+        const encryptedContent = this.encryptionService.serialize(encryptedPayload);
+        this.currentMemo.update(encryptedContent);
+        this.localRepo.saveMemo(this.currentMemo);
+        this.decryptedDraft = source;
+        this.updateUI();
+        this.scheduleAutoSync();
+        this.updateSyncStatus('暗号化して保存（表示は平文）');
+        return;
+      }
     } catch (error) {
       console.error('Encrypt memo failed:', error);
       alert('暗号化に失敗しました: ' + (error.message || error));
@@ -480,7 +536,7 @@ export class AppController {
                 const s = cloudData.settings;
                 if (s && typeof s.limitType === 'string' && typeof s.limitValue === 'number') {
                   if (s.limitValue < 1) s.limitValue = 1;
-                  if (s.limitValue > 5000) s.limitValue = 5000;
+                  if (s.limitValue > CONFIG.MAX_LIMIT_VALUE) s.limitValue = CONFIG.MAX_LIMIT_VALUE;
                   if (s.limitType !== CONFIG.LIMIT_TYPE.CHAR && s.limitType !== CONFIG.LIMIT_TYPE.BYTE) s.limitType = CONFIG.DEFAULT_LIMIT.type;
                   this.inputLimiter.setLimit(s.limitType || CONFIG.DEFAULT_LIMIT.type, s.limitValue || CONFIG.DEFAULT_LIMIT.value);
                   // UI要素も更新
@@ -637,8 +693,8 @@ export class AppController {
     const type = this.elements.limitTypeSelect.value;
     const value = parseInt(this.elements.limitValueInput.value, 10);
 
-    if (value > 5000){
-      console.log('Limit value over 5000 is not allowed.');
+    if (value > CONFIG.MAX_LIMIT_VALUE){
+      console.log(`Limit value over ${CONFIG.MAX_LIMIT_VALUE} is not allowed.`);
     }
     else if (value < 1) {
       console.log('Limit value under 1 is not allowed.');
@@ -738,9 +794,25 @@ export class AppController {
   }
 
   sanitizeBasic(value) {
-    return String(value)
-      .replace(/\u0000/g, '')        // NULL文字
-      .replace(/\r\n?/g, '\n');     // 改行を統一
+    // 正規化・制御文字除去は Sanitizer 側のロジックを利用する
+    // 表示のために HTML エスケープは行わず、入力の正規化のみ行う
+    try {
+      // バイト制限の場合は truncate を使って正確に切り詰める
+      if (this.inputLimiter && this.inputLimiter.limitType === CONFIG.LIMIT_TYPE.BYTE) {
+        // まず文字列正規化（長さ上限は大きめにしておく）
+        let s = sanitizeStringForMemo(String(value), CONFIG.MAX_LIMIT_VALUE);
+        if (this.inputLimiter.isExceeded(s)) {
+          s = this.inputLimiter.truncate(s);
+        }
+        return s;
+      }
+
+      // 文字数制限（CHAR）の場合は inputLimiter の limitValue を反映して切り詰める
+      const max = (this.inputLimiter && Number.isInteger(this.inputLimiter.limitValue)) ? this.inputLimiter.limitValue : CONFIG.DEFAULT_LIMIT.value;
+      return sanitizeStringForMemo(String(value), max);
+    } catch (e) {
+      return console.error('Failed to sanitize value:', e);
+    }
   }
 
   /**
@@ -787,7 +859,7 @@ export class AppController {
 
     // 暗号化UI表示
     if (this.elements.encryptMemoBtn) {
-      this.elements.encryptMemoBtn.textContent = encrypted ? '暗号化保存' : '暗号化して保存';
+      this.elements.encryptMemoBtn.textContent = '暗号化して保存';
     }
     if (this.elements.decryptMemoBtn) {
       this.elements.decryptMemoBtn.disabled = !encrypted;

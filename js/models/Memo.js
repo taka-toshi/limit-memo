@@ -1,4 +1,5 @@
 // models/Memo.js - メモ本文を表現するドメインオブジェクト
+import { CONFIG } from '../config.js';
 
 /**
  * Memo - メモ本体のドメインオブジェクト
@@ -24,8 +25,8 @@ export class Memo {
     if (typeof newContent !== "string") {
       throw new Error('Invalid content');
     }
-    if (newContent.length > 5000) {
-      newContent = newContent.slice(0, 5000);
+    if (newContent.length > CONFIG.MAX_LIMIT_VALUE) {
+      newContent = newContent.slice(0, CONFIG.MAX_LIMIT_VALUE);
     }
     this.content = newContent;
     this.updatedAt = new Date().toISOString();

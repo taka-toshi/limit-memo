@@ -181,8 +181,23 @@ section h2 {
 
 .encryption-info {
   margin-top: 10px;
-  color: var(--secondary-color);
+  color: var(--text-color);
   font-size: 0.9rem;
+}
+
+/* Help text under encryption controls */
+.encryption-help {
+  margin-top: 8px;
+  color: var(--text-color);
+  font-size: 0.95rem;
+}
+.encryption-help ul {
+  list-style: disc;
+  margin-left: 18px;
+  padding-left: 0;
+}
+.encryption-help li {
+  margin-bottom: 6px;
 }
 
 /* Memo Section */
