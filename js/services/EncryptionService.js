@@ -12,7 +12,7 @@ export class EncryptionService {
   }
 
   isAvailable() {
-    return !!window.crypto?.subtle;
+    return !!globalThis.crypto?.subtle;
   }
 
   isEncryptedContent(content) {
@@ -22,15 +22,15 @@ export class EncryptionService {
   async encrypt(plainText, password) {
     this._assertAvailable();
     if (typeof plainText !== 'string') {
-      throw new Error('暗号化対象が不正です');
+      throw new TypeError('暗号化対象が不正です');
     }
     this._assertPassword(password);
 
-    const salt = window.crypto.getRandomValues(new Uint8Array(CONFIG.ENCRYPTION.SALT_BYTES));
-    const iv = window.crypto.getRandomValues(new Uint8Array(CONFIG.ENCRYPTION.IV_BYTES));
+    const salt = globalThis.crypto.getRandomValues(new Uint8Array(CONFIG.ENCRYPTION.SALT_BYTES));
+    const iv = globalThis.crypto.getRandomValues(new Uint8Array(CONFIG.ENCRYPTION.IV_BYTES));
     const key = await this._deriveKey(password, salt, CONFIG.ENCRYPTION.KDF_ITERATIONS);
 
-    const encrypted = await window.crypto.subtle.encrypt(
+    const encrypted = await globalThis.crypto.subtle.encrypt(
       { name: 'AES-GCM', iv },
       key,
       this.encoder.encode(plainText)
@@ -59,7 +59,7 @@ export class EncryptionService {
     const key = await this._deriveKey(password, salt, payload.iterations);
 
     try {
-      const decrypted = await window.crypto.subtle.decrypt(
+      const decrypted = await globalThis.crypto.subtle.decrypt(
         { name: 'AES-GCM', iv },
         key,
         data
@@ -89,7 +89,7 @@ export class EncryptionService {
   }
 
   async _deriveKey(password, salt, iterations) {
-    const keyMaterial = await window.crypto.subtle.importKey(
+    const keyMaterial = await globalThis.crypto.subtle.importKey(
       'raw',
       this.encoder.encode(password),
       'PBKDF2',
@@ -97,7 +97,7 @@ export class EncryptionService {
       ['deriveKey']
     );
 
-    return window.crypto.subtle.deriveKey(
+    return globalThis.crypto.subtle.deriveKey(
       {
         name: 'PBKDF2',
         salt,

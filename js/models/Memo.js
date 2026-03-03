@@ -23,7 +23,7 @@ export class Memo {
    */
   update(newContent) {
     if (typeof newContent !== "string") {
-      throw new Error('Invalid content');
+      throw new TypeError('Invalid content');
     }
     if (newContent.length > CONFIG.MAX_LIMIT_VALUE) {
       newContent = newContent.slice(0, CONFIG.MAX_LIMIT_VALUE);
@@ -50,7 +50,7 @@ export class Memo {
    */
   static fromJSON(json) {
     if (typeof json.content !== "string"){
-      throw new Error('Invalid content');
+      throw new TypeError('Invalid content');
     }
     return new Memo(json.content, json.updatedAt);
   }

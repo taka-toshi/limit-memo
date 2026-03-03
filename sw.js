@@ -24,7 +24,7 @@ const ASSETS_TO_CACHE = [
  * Service Worker インストール時
  * 必要なアセットをキャッシュ
  */
-self.addEventListener('install', (event) => {
+globalThis.addEventListener('install', (event) => {
   // Service Worker: Installing
   
   event.waitUntil(
@@ -35,7 +35,7 @@ self.addEventListener('install', (event) => {
       })
       .then(() => {
         // Service Worker: Installed
-        return self.skipWaiting();
+        return globalThis.skipWaiting();
       })
       .catch((error) => {
         console.error('Service Worker: Installation failed', error);
@@ -47,7 +47,7 @@ self.addEventListener('install', (event) => {
  * Service Worker アクティベーション時
  * 古いキャッシュを削除
  */
-self.addEventListener('activate', (event) => {
+globalThis.addEventListener('activate', (event) => {
   // Service Worker: Activating
   
   event.waitUntil(
@@ -64,7 +64,7 @@ self.addEventListener('activate', (event) => {
       })
       .then(() => {
         // Service Worker: Activated
-        return self.clients.claim();
+        return globalThis.clients.claim();
       })
   );
 });
@@ -73,7 +73,7 @@ self.addEventListener('activate', (event) => {
  * Fetch イベント
  * Network First 戦略（オンライン優先、オフライン時はキャッシュ）
  */
-self.addEventListener('fetch', (event) => {
+globalThis.addEventListener('fetch', (event) => {
   const { request } = event;
   // Skip non-http(s) schemes (e.g., chrome-extension://)
   try {
@@ -137,7 +137,7 @@ self.addEventListener('fetch', (event) => {
  * メッセージイベント
  * アプリからの指示を受け取る
  */
-self.addEventListener('message', (event) => {
+globalThis.addEventListener('message', (event) => {
   // 受信元 origin を検証して同一オリジン以外は無視する
   let sourceOrigin = null;
   try {
@@ -151,7 +151,7 @@ self.addEventListener('message', (event) => {
   }
 
   // 許可する origin（現在は同一オリジンのみ）
-  const allowedOrigins = [self.location?.origin].filter(Boolean);
+  const allowedOrigins = [globalThis.location?.origin].filter(Boolean);
 
   if (!sourceOrigin || !allowedOrigins.includes(sourceOrigin)) {
     // 信頼できない送信元からのメッセージは無視
@@ -159,12 +159,12 @@ self.addEventListener('message', (event) => {
   }
 
   const msg = event.data || {};
-  if (msg.type === 'SKIP_WAITING') {
-    self.skipWaiting();
+    if (msg.type === 'SKIP_WAITING') {
+    globalThis.skipWaiting();
     return;
   }
 
-  if (msg.type === 'CACHE_URLS' && Array.isArray(msg.urls)) {
+    if (msg.type === 'CACHE_URLS' && Array.isArray(msg.urls)) {
     event.waitUntil(
       caches.open(CACHE_NAME).then((cache) => cache.addAll(msg.urls))
     );
@@ -176,7 +176,7 @@ self.addEventListener('message', (event) => {
  * Background Sync イベント（将来の拡張用）
  * オフライン時の変更をオンライン復帰時に同期
  */
-self.addEventListener('sync', (event) => {
+globalThis.addEventListener('sync', (event) => {
   if (event.tag === 'sync-memo') {
     // Background sync triggered
     event.waitUntil(

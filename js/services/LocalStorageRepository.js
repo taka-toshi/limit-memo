@@ -156,6 +156,7 @@ export class LocalStorageRepository {
     try {
       localStorage.setItem(CONFIG.SETTINGS_KEY, JSON.stringify(initialData.settings));
     } catch (e) {
+      console.warn('Failed to persist settings separately:', e);
       // ignore
     }
     return initialData;

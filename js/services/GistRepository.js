@@ -189,6 +189,7 @@ export class GistRepository extends CloudRepository {
       const data = await this.read();
       return data !== null;
     } catch (error) {
+      console.error('Gist exists check failed:', error);
       return false;
     }
   }
