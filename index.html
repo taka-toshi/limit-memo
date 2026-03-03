@@ -26,10 +26,10 @@
     </header>
 
     <!-- グローバルステータス表示 -->
-    <div id="syncStatus" class="sync-status" role="status" aria-live="polite" aria-atomic="true">
+    <output id="syncStatus" class="sync-status" aria-live="polite" aria-atomic="true">
       <span class="sync-spinner" aria-hidden="true"></span>
       <span class="sync-status-text"></span>
-    </div>
+    </output>
 
     <main>
       <!-- オフライン通知 -->
@@ -109,9 +109,9 @@
       </section>
 
       <!-- モーダル: ローカルデータ削除確認 (統一スタイル) -->
-      <div id="clearMemoConfirm" class="modal" aria-hidden="true" role="dialog" aria-modal="true" inert
+      <dialog id="clearMemoConfirm" class="modal" aria-hidden="true" aria-modal="true" inert
         style="display:none;">
-        <div class="modal-content" role="document">
+        <div class="modal-content">
           <div class="modal-header">ローカルデータの削除</div>
           <p>ローカルに保存されたメモを完全に削除します。復元できません。<br>また、クラウドとの連携が解除されます。<br>よろしいですか？</p>
           <div class="modal-buttons">
@@ -119,7 +119,7 @@
             <button id="cancelClearMemoBtn" class="cancel-btn btn">キャンセル</button>
           </div>
         </div>
-      </div>
+      </dialog>
 
       <!-- Logout Confirmation Modal -->
       <div id="logoutConfirmModal" class="modal">

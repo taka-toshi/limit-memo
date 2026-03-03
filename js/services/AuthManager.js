@@ -140,7 +140,7 @@ export class AuthManager {
         try {
           const provider = new globalThis.firebase.auth.GithubAuthProvider();
           provider.addScope('gist');
-          await window.firebase.auth().signInWithPopup(provider);
+          await globalThis.firebase.auth().signInWithPopup(provider);
           // 再度取得して削除
           const reUser = globalThis.firebase.auth().currentUser;
           if (reUser) {

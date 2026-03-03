@@ -66,6 +66,7 @@ export class EncryptionService {
       );
       return this.decoder.decode(decrypted);
     } catch (error) {
+      console.error('Failed to decrypt:', error);
       throw new Error('復号に失敗しました。パスワードを確認してください。');
     }
   }
