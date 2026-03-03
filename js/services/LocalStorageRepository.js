@@ -62,6 +62,7 @@ export class LocalStorageRepository {
             };
           }
         } catch (e) {
+          console.warn('Failed to load settings separately:', e);
           data.settings = {
             limitType: CONFIG.DEFAULT_LIMIT.type,
             limitValue: CONFIG.DEFAULT_LIMIT.value

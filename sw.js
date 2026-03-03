@@ -89,6 +89,7 @@ globalThis.addEventListener('fetch', (event) => {
     }
   } catch (e) {
     // If URL parsing fails, skip handling
+    console.warn('Failed to parse URL:', request.url);
     return;
   }
   
@@ -109,6 +110,7 @@ globalThis.addEventListener('fetch', (event) => {
             }
           } catch (e) {
             // ignore
+            console.warn('Failed to parse URL:', request.url);
           }
         }
         return response;
@@ -141,12 +143,13 @@ globalThis.addEventListener('message', (event) => {
   // 受信元 origin を検証して同一オリジン以外は無視する
   let sourceOrigin = null;
   try {
-    if (event.source && event.source.url) {
+    if (event.source?.url) {
       sourceOrigin = new URL(event.source.url).origin;
     } else if (event.origin) {
       sourceOrigin = event.origin;
     }
   } catch (e) {
+    console.warn('Failed to parse message origin:', e);
     sourceOrigin = null;
   }
 

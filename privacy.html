@@ -51,7 +51,7 @@
                 if (!res.ok) throw new Error('ロード失敗');
                 const md = await res.text();
                 // Try to load marked if available, otherwise render as pre
-                if (window.marked) {
+                if (globalThis.marked) {
                     // sanitize marked output before inserting into DOM
                     const dirty = marked.parse(md);
                     const clean = DOMPurify.sanitize(dirty, {

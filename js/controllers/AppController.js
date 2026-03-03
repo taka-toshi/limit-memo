@@ -85,7 +85,13 @@ export class AppController {
     } catch (e) {
       console.warn('Failed to load local memo data:', e);
       this.currentMemo = new Memo();
-      try { this.localRepo.initialize(); } catch (_) {}
+      if (this.localRepo && typeof this.localRepo.initialize === 'function') {
+        try {
+          this.localRepo.initialize();
+        } catch (err) {
+          console.warn('Failed to initialize localRepo during recovery:', err);
+        }
+      }
     }
   }
 
@@ -188,7 +194,7 @@ export class AppController {
         if (!modal) return;
 
         // blur any focused element inside modal first (check methods to avoid exceptions)
-        if (cancelBtn && typeof cancelBtn.blur === 'function') cancelBtn.blur();
+        if (typeof cancelBtn.blur === 'function') cancelBtn.blur();
         if (confirmBtn && typeof confirmBtn.blur === 'function') confirmBtn.blur();
         // return focus to opener before hiding modal
         if (openBtn && typeof openBtn.focus === 'function') openBtn.focus();
@@ -206,11 +212,11 @@ export class AppController {
 
         if (!modal) return;
 
-        // blur focused elements inside modal
-        try { confirmBtn.blur(); } catch (e) {}
-        try { cancelBtn.blur(); } catch (e) {}
-        // return focus to opener before hiding
-        try { openBtn?.focus(); } catch (e) {}
+          // blur focused elements inside modal (use safe existence checks)
+          if (confirmBtn && typeof confirmBtn.blur === 'function') confirmBtn.blur();
+          if (cancelBtn && typeof cancelBtn.blur === 'function') cancelBtn.blur();
+          // return focus to opener before hiding
+          if (openBtn && typeof openBtn.focus === 'function') openBtn.focus();
 
         modal.style.display = 'none';
         modal.setAttribute('aria-hidden', 'true');
@@ -245,12 +251,9 @@ export class AppController {
       this.elements.encryptionPasswordInput.addEventListener('keydown', async (e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
-          try {
-            // まず自動復号を試みる（現在のメモが暗号化されている場合）
-            await this.handleDecryptMemo();
-          } catch (err) {
-            // handleDecryptMemo が内部でエラー処理するためここでは何もしない
-          }
+          // まず自動復号を試みる（現在のメモが暗号化されている場合）
+          // `handleDecryptMemo` は内部で例外処理するためここでの catch は不要
+          await this.handleDecryptMemo();
         }
       });
     }
@@ -461,11 +464,11 @@ export class AppController {
     confirmBtn?.focus();
 
     const closeModal = () => {
-      // ensure no focused descendant remains inside modal
-      try { confirmBtn?.blur(); } catch (e) {}
-      try { cancelBtn?.blur(); } catch (e) {}
-      // move focus back to opener before hiding to avoid aria-hidden on focused ancestor
-      try { opener?.focus(); } catch (e) { /* ignore */ }
+      // ensure no focused descendant remains inside modal (use safe checks)
+      if (confirmBtn && typeof confirmBtn.blur === 'function') confirmBtn.blur();
+      if (cancelBtn && typeof cancelBtn.blur === 'function') cancelBtn.blur();
+      // move focus back to opener before hiding to avoid aria_hidden on focused ancestor
+      if (opener && typeof opener.focus === 'function') opener.focus();
       modal.style.display = 'none';
       modal.setAttribute('aria-hidden', 'true');
       modal.setAttribute('inert', '');
@@ -707,7 +710,7 @@ export class AppController {
       } catch (e) {
         console.warn('Failed to remove auth data:', e);
         // フォールバックで手動削除
-        try { localStorage.removeItem(CONFIG.AUTH_KEY); localStorage.removeItem('gist_id'); } catch (_) {}
+        try { localStorage.removeItem(CONFIG.AUTH_KEY); localStorage.removeItem('gist_id'); } catch (err) { console.warn('Fallback localStorage cleanup failed:', err); }
       }
 
       // UI をログイン可能なローカルのみの状態へ
@@ -763,7 +766,7 @@ export class AppController {
       } catch (e) {
         console.error('Failed to save settings into localRepo:', e);
         // フォールバックで従来通り別キーにも保存
-        try { localStorage.setItem(CONFIG.SETTINGS_KEY, JSON.stringify({ limitType: type, limitValue: value })); } catch (_) {}
+        try { localStorage.setItem(CONFIG.SETTINGS_KEY, JSON.stringify({ limitType: type, limitValue: value })); } catch (err) { console.warn('Failed to save SETTINGS_KEY fallback:', err); }
       }
     }
   }
@@ -857,14 +860,14 @@ export class AppController {
   updateUI(options = {}) {
     const encrypted = this.isCurrentMemoEncrypted();
 
-    this._renderMemoEditor(options, encrypted);
+    this._renderMemoEditor(encrypted, options);
     this._updateCountsAndLimitInfo();
     this._updateEncryptionUI(encrypted);
     this._updateAuthUI();
     this._updateOfflineIndicator();
   }
 
-  _renderMemoEditor(options = {}, encrypted) {
+  _renderMemoEditor(encrypted, options = {}) {
     if (encrypted) {
       if (this.decryptedDraft !== null) {
         if (!options.keepEditorValue) {
