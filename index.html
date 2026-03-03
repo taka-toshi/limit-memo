@@ -26,7 +26,10 @@
     </header>
 
     <!-- グローバルステータス表示 -->
-    <div id="syncStatus" class="sync-status"></div>
+    <div id="syncStatus" class="sync-status" role="status" aria-live="polite" aria-atomic="true">
+      <span class="sync-spinner" aria-hidden="true"></span>
+      <span class="sync-status-text"></span>
+    </div>
 
     <main>
       <!-- オフライン通知 -->

@@ -833,12 +833,44 @@ export class AppController {
    * @param {string} message
    */
   updateSyncStatus(message) {
-    this.elements.syncStatus.textContent = message;
+    const statusEl = this.elements.syncStatus;
+    if (!statusEl) return;
+
+    const textEl = statusEl.querySelector('.sync-status-text');
+    const normalized = (message || '').trim();
+
+    if (!normalized) {
+      statusEl.classList.remove('show');
+      statusEl.classList.remove('idle');
+      statusEl.style.opacity = '0';
+      statusEl.style.transform = 'translateX(-50%) translateY(12px)';
+      if (textEl) textEl.textContent = '';
+      return;
+    }
+
+    if (textEl) {
+      textEl.textContent = normalized;
+    } else {
+      statusEl.textContent = normalized;
+    }
+
+    const isProgress = /中/.test(normalized);
+    statusEl.classList.toggle('idle', !isProgress);
+    statusEl.classList.add('show');
+    statusEl.style.opacity = '1';
+    statusEl.style.transform = 'translateX(-50%) translateY(0)';
+
     setTimeout(() => {
-      if (this.elements.syncStatus.textContent === message) {
-        this.elements.syncStatus.textContent = '　';
+      const current = (textEl ? textEl.textContent : statusEl.textContent || '').trim();
+      if (current === normalized) {
+        statusEl.classList.remove('show');
+        statusEl.classList.remove('idle');
+        statusEl.style.opacity = '0';
+        statusEl.style.transform = 'translateX(-50%) translateY(12px)';
+        if (textEl) textEl.textContent = '';
+        else statusEl.textContent = '';
       }
-    }, 3000);
+    }, 5000);
   }
 
   /**
