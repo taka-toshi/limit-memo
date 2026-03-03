@@ -248,7 +248,7 @@ export class AppController {
 
       this.decryptedDraft = this.sanitizeBasic(value);
       this.updateUI({ keepEditorValue: true });
-      this.updateSyncStatus('暗号化メモ編集中です。「暗号化保存」で保存されます');
+      this.updateSyncStatus('暗号化メモ編集中...');
       return;
     }
 
@@ -300,11 +300,11 @@ export class AppController {
 
       this.updateUI();
       this.scheduleAutoSync();
-      this.updateSyncStatus('メモを暗号化して保存しました（表示は平文のままです）');
+      this.updateSyncStatus('暗号化して保存（表示は平文）');
     } catch (error) {
       console.error('Encrypt memo failed:', error);
       alert('暗号化に失敗しました: ' + (error.message || error));
-      this.updateSyncStatus('暗号化に失敗しました');
+      this.updateSyncStatus('暗号化失敗');
     }
   }
 
@@ -314,7 +314,7 @@ export class AppController {
   async handleDecryptMemo() {
     try {
       if (!this.isCurrentMemoEncrypted()) {
-        this.updateSyncStatus('このメモは暗号化されていません');
+        this.updateSyncStatus('このメモは未暗号化です');
         return;
       }
 
@@ -329,11 +329,11 @@ export class AppController {
       this.decryptedDraft = plainText;
 
       this.updateUI();
-      this.updateSyncStatus('復号しました（このセッションの表示のみ）');
+      this.updateSyncStatus('復号成功（このセッションのみ）');
     } catch (error) {
       console.error('Decrypt memo failed:', error);
       alert('復号に失敗しました: ' + (error.message || error));
-      this.updateSyncStatus('復号に失敗しました');
+      this.updateSyncStatus('復号失敗');
     }
   }
 
@@ -417,7 +417,7 @@ export class AppController {
         await this.authManager.logout();
         await this.transitionTo(CONFIG.APP_STATE.LOCAL_ONLY);
         this.updateUI();
-        this.updateSyncStatus('ログアウトしました');
+        this.updateSyncStatus('ログアウト完了');
       } catch (e) {
         console.error('Logout failed:', e);
         this.updateSyncStatus('ログアウト失敗');
@@ -503,9 +503,9 @@ export class AppController {
             const autoDecrypted = await this.tryAutoDecryptWithInputPassword();
             if (this.isCurrentMemoEncrypted()) {
               if (autoDecrypted) {
-                this.updateSyncStatus('同期完了（入力済みパスワードで自動復号しました）');
+                this.updateSyncStatus('同期完了（自動復号済み）');
               } else {
-                this.updateSyncStatus('同期完了（暗号化メモです。パスワード入力で復号できます）');
+                this.updateSyncStatus('同期完了（復号待ち）');
               }
             }
 
@@ -516,7 +516,7 @@ export class AppController {
         }
       } catch (error) {
         console.error('Manual sync failed:', error);
-        this.updateSyncStatus('同期エラー: ' + error.message);
+        this.updateSyncStatus('同期エラー（詳細はコンソール）');
       }
     }
   }
@@ -557,7 +557,7 @@ export class AppController {
 
         await this.transitionTo(CONFIG.APP_STATE.LOCAL_ONLY);
         this.updateUI();
-        this.updateSyncStatus('アカウントを削除しました');
+        this.updateSyncStatus('アカウント削除完了');
       } catch (error) {
         console.error('Account delete failed:', error);
         this.updateSyncStatus('アカウント削除失敗');
@@ -622,7 +622,7 @@ export class AppController {
       await this.transitionTo(CONFIG.APP_STATE.LOCAL_ONLY);
       this.updateUI();
 
-      this.updateSyncStatus('ローカルデータを削除しました');
+      this.updateSyncStatus('ローカルデータ削除完了');
     } catch (error) {
       console.error('Clear memo failed:', error);
       alert('ローカルデータ削除に失敗しました: ' + (error.message || error));
@@ -707,7 +707,7 @@ export class AppController {
       this.updateSyncStatus('同期完了');
     } catch (error) {
       console.error('Initial sync failed:', error);
-      this.updateSyncStatus('同期エラー: ' + error.message);
+      this.updateSyncStatus('同期エラー（詳細はコンソール）');
     }
   }
 
@@ -760,7 +760,7 @@ export class AppController {
       } else {
         this.elements.memoInput.value = '';
         this.elements.memoInput.disabled = true;
-        this.elements.memoInput.placeholder = 'このメモは暗号化されています。パスワードを入力して復号してください';
+        this.elements.memoInput.placeholder = 'このメモは暗号化されています。パスワードを入力して復号してください。\nパスワードが未入力、または正しくない可能性があります。';
       }
     } else {
       if (this.currentMemo && typeof this.currentMemo.content === 'string' && !options.keepEditorValue) {
