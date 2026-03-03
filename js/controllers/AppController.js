@@ -69,7 +69,7 @@ export class AppController {
       const storedSettings = localStorage.getItem(CONFIG.SETTINGS_KEY);
       if (storedSettings) {
         const s = JSON.parse(storedSettings);
-        if (s && typeof s.limitType === 'string' && typeof s.limitValue === 'number') {
+        if (typeof s?.limitType === 'string' && typeof s?.limitValue === 'number') {
           if (s.limitValue < 1) s.limitValue = 1;
           if (s.limitValue > CONFIG.MAX_LIMIT_VALUE) s.limitValue = CONFIG.MAX_LIMIT_VALUE;
           if (s.limitType !== CONFIG.LIMIT_TYPE.CHAR && s.limitType !== CONFIG.LIMIT_TYPE.BYTE) {
@@ -528,44 +528,7 @@ export class AppController {
           // 直近のクラウドデータは SyncManager に保存しているため、再取得を避ける
           const cloudData = this.syncManager.lastCloudData || await this.cloudRepo.read();
           if (cloudData) {
-            this.currentMemo = Memo.fromJSON(cloudData.memo);
-            this.decryptedDraft = null;
-            // cloud に含まれる settings があれば InputLimiter と UI に反映
-            if (cloudData.settings) {
-              try {
-                const s = cloudData.settings;
-                if (s && typeof s.limitType === 'string' && typeof s.limitValue === 'number') {
-                  if (s.limitValue < 1) s.limitValue = 1;
-                  if (s.limitValue > CONFIG.MAX_LIMIT_VALUE) s.limitValue = CONFIG.MAX_LIMIT_VALUE;
-                  if (s.limitType !== CONFIG.LIMIT_TYPE.CHAR && s.limitType !== CONFIG.LIMIT_TYPE.BYTE) s.limitType = CONFIG.DEFAULT_LIMIT.type;
-                  this.inputLimiter.setLimit(s.limitType || CONFIG.DEFAULT_LIMIT.type, s.limitValue || CONFIG.DEFAULT_LIMIT.value);
-                  // UI要素も更新
-                  if (this.elements.limitTypeSelect) this.elements.limitTypeSelect.value = this.inputLimiter.limitType;
-                  if (this.elements.limitValueInput) this.elements.limitValueInput.value = this.inputLimiter.limitValue;
-                }
-                // 永続化して localRepo と整合させる
-                try {
-                  const existing = this.localRepo.load() || this.localRepo._createInitialData();
-                  existing.settings = { limitType: this.inputLimiter.limitType, limitValue: this.inputLimiter.limitValue };
-                  this.localRepo.save(existing);
-                } catch (e) {
-                  console.warn('Failed to persist cloud settings locally:', e);
-                }
-              } catch (e) {
-                console.warn('Failed to apply cloud settings:', e);
-              }
-            }
-
-            const autoDecrypted = await this.tryAutoDecryptWithInputPassword();
-            if (this.isCurrentMemoEncrypted()) {
-              if (autoDecrypted) {
-                this.updateSyncStatus('同期完了（自動復号済み）');
-              } else {
-                this.updateSyncStatus('同期完了（復号待ち）');
-              }
-            }
-
-            this.updateUI();
+            await this._handleCloudDataAfterSync(cloudData);
           }
         } else {
           this.updateSyncStatus('同期失敗');
@@ -574,6 +537,63 @@ export class AppController {
         console.error('Manual sync failed:', error);
         this.updateSyncStatus('同期エラー（詳細はコンソール）');
       }
+    }
+  }
+
+  /**
+   * Handle cloud data after a successful sync: apply memo, settings and attempt auto-decrypt.
+   * @private
+   */
+  async _handleCloudDataAfterSync(cloudData) {
+    try {
+      this.currentMemo = Memo.fromJSON(cloudData.memo);
+      this.decryptedDraft = null;
+
+      await this._applyCloudSettingsToLocal(cloudData);
+
+      const autoDecrypted = await this.tryAutoDecryptWithInputPassword();
+      if (this.isCurrentMemoEncrypted()) {
+        if (autoDecrypted) {
+          this.updateSyncStatus('同期完了（自動復号済み）');
+        } else {
+          this.updateSyncStatus('同期完了（復号待ち）');
+        }
+      }
+
+      this.updateUI();
+    } catch (e) {
+      console.warn('Failed to handle cloud data after sync:', e);
+    }
+  }
+
+  /**
+   * Apply settings from cloudData into InputLimiter and persist to localRepo
+   * @private
+   */
+  async _applyCloudSettingsToLocal(cloudData) {
+    if (!cloudData || !cloudData.settings) return;
+    try {
+      const s = cloudData.settings;
+      if (typeof s?.limitType === 'string' && typeof s?.limitValue === 'number') {
+        if (s.limitValue < 1) s.limitValue = 1;
+        if (s.limitValue > CONFIG.MAX_LIMIT_VALUE) s.limitValue = CONFIG.MAX_LIMIT_VALUE;
+        if (s.limitType !== CONFIG.LIMIT_TYPE.CHAR && s.limitType !== CONFIG.LIMIT_TYPE.BYTE) s.limitType = CONFIG.DEFAULT_LIMIT.type;
+        this.inputLimiter.setLimit(s.limitType || CONFIG.DEFAULT_LIMIT.type, s.limitValue || CONFIG.DEFAULT_LIMIT.value);
+        // UI要素も更新
+        if (this.elements.limitTypeSelect) this.elements.limitTypeSelect.value = this.inputLimiter.limitType;
+        if (this.elements.limitValueInput) this.elements.limitValueInput.value = this.inputLimiter.limitValue;
+      }
+
+      // 永続化して localRepo と整合させる
+      try {
+        const existing = this.localRepo.load() || this.localRepo._createInitialData();
+        existing.settings = { limitType: this.inputLimiter.limitType, limitValue: this.inputLimiter.limitValue };
+        this.localRepo.save(existing);
+      } catch (e) {
+        console.warn('Failed to persist cloud settings locally:', e);
+      }
+    } catch (e) {
+      console.warn('Failed to apply cloud settings:', e);
     }
   }
 
@@ -662,7 +682,7 @@ export class AppController {
       // GitHub 連携情報を削除（アクセストークン・gist id 等）
       try {
         // AuthManager.logout() は Firebase のサインアウトと localStorage 削除を行う
-        if (this.authManager && typeof this.authManager.logout === 'function') {
+        if (typeof this.authManager?.logout === 'function') {
           await this.authManager.logout();
         } else {
           localStorage.removeItem(CONFIG.AUTH_KEY);
@@ -691,7 +711,7 @@ export class AppController {
    */
   handleLimitChange() {
     const type = this.elements.limitTypeSelect.value;
-    const value = parseInt(this.elements.limitValueInput.value, 10);
+    const value = Number.parseInt(this.elements.limitValueInput.value, 10);
 
     if (value > CONFIG.MAX_LIMIT_VALUE){
       console.log(`Limit value over ${CONFIG.MAX_LIMIT_VALUE} is not allowed.`);
@@ -798,7 +818,7 @@ export class AppController {
     // 表示のために HTML エスケープは行わず、入力の正規化のみ行う
     try {
       // バイト制限の場合は truncate を使って正確に切り詰める
-      if (this.inputLimiter && this.inputLimiter.limitType === CONFIG.LIMIT_TYPE.BYTE) {
+      if (this.inputLimiter?.limitType === CONFIG.LIMIT_TYPE.BYTE) {
         // まず文字列正規化（長さ上限は大きめにしておく）
         let s = sanitizeStringForMemo(String(value), CONFIG.MAX_LIMIT_VALUE);
         if (this.inputLimiter.isExceeded(s)) {
@@ -808,7 +828,7 @@ export class AppController {
       }
 
       // 文字数制限（CHAR）の場合は inputLimiter の limitValue を反映して切り詰める
-      const max = (this.inputLimiter && Number.isInteger(this.inputLimiter.limitValue)) ? this.inputLimiter.limitValue : CONFIG.DEFAULT_LIMIT.value;
+      const max = Number.isInteger(this.inputLimiter?.limitValue) ? this.inputLimiter.limitValue : CONFIG.DEFAULT_LIMIT.value;
       return sanitizeStringForMemo(String(value), max);
     } catch (e) {
       return console.error('Failed to sanitize value:', e);
@@ -835,7 +855,7 @@ export class AppController {
         this.elements.memoInput.placeholder = 'このメモは暗号化されています。パスワードを入力して復号してください。\nパスワードが未入力、または正しくない可能性があります。';
       }
     } else {
-      if (this.currentMemo && typeof this.currentMemo.content === 'string' && !options.keepEditorValue) {
+      if (typeof this.currentMemo?.content === 'string' && !options.keepEditorValue) {
         this.elements.memoInput.value = this.currentMemo.content;
       }
       this.elements.memoInput.disabled = false;

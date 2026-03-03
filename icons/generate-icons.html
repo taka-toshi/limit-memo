@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 
 <head>
   <meta charset="UTF-8">
@@ -51,7 +51,7 @@ convert -size 512x512 xc:#2196F3 -fill white -pointsize 320 -gravity center -ann
       a.download = filename;
       document.body.appendChild(a);
       a.click();
-      document.body.removeChild(a);
+      a.remove();
 
       URL.revokeObjectURL(url);
     }

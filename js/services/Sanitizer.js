@@ -5,12 +5,12 @@ import { CONFIG } from '../config.js';
 export function escapeHtml(str) {
   if (typeof str !== 'string') return '';
   return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
-    .replace(/\//g, '&#x2F;');
+    .replaceAll(/&/g, '&amp;')
+    .replaceAll(/</g, '&lt;')
+    .replaceAll(/>/g, '&gt;')
+    .replaceAll(/"/g, '&quot;')
+    .replaceAll(/'/g, '&#39;')
+    .replaceAll(/\//g, '&#x2F;');
 }
 
 /** 簡易判定: 値が文字列か */
@@ -31,11 +31,11 @@ export function sanitizeStringForMemo(value, maxLen = CONFIG.MAX_LIMIT_VALUE) {
   let s = value.normalize ? value.normalize('NFC') : String(value);
 
   // NULL と制御文字（タブと改行は許可）を除去
-  s = s.replace(/\u0000/g, '');
-  s = s.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+  s = s.replaceAll(/\u0000/g, '');
+  s = s.replaceAll(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
 
   // 改行を統一
-  s = s.replace(/\r\n?/g, '\n');
+  s = s.replaceAll(/\r\n?/g, '\n');
 
   // 余分な先頭/末尾空白を除去（ただし内部の空白は維持）
   s = s.trim();
@@ -58,76 +58,70 @@ export function sanitizeStringForMemo(value, maxLen = CONFIG.MAX_LIMIT_VALUE) {
 export function sanitizeCloudPayload(payload) {
   if (!payload || typeof payload !== 'object') return null;
 
-  const out = {};
-
   const isValidTimestamp = (v) => {
     if (!isString(v)) return false;
     const t = Date.parse(v);
     return !Number.isNaN(t);
   };
 
-  // meta (任意だがオブジェクトなら主要項目のみコピー)
-  out.meta = {};
-  if (payload.meta && typeof payload.meta === 'object') {
-    // schemaVersion は数値であることを期待
-    out.meta.schemaVersion = (typeof payload.meta.schemaVersion === 'number' && Number.isFinite(payload.meta.schemaVersion)) ? payload.meta.schemaVersion : CONFIG.SCHEMA_VERSION;
-    out.meta.appVersion = isString(payload.meta.appVersion) ? sanitizeStringForMemo(payload.meta.appVersion, 64) : CONFIG.APP_VERSION;
-    out.meta.createdAt = isValidTimestamp(payload.meta.createdAt) ? payload.meta.createdAt : new Date().toISOString();
-  } else {
-    out.meta.schemaVersion = CONFIG.SCHEMA_VERSION;
-    out.meta.appVersion = CONFIG.APP_VERSION;
-    out.meta.createdAt = new Date().toISOString();
-  }
+  const out = {};
 
-  // memo (必須に近い) - content は文字列であること
-  out.memo = { content: '', updatedAt: new Date().toISOString() };
-  if (payload.memo && typeof payload.memo === 'object') {
-    if (isString(payload.memo.content)) {
-      // 暗号化済みのシリアライズ文字列はそのまま受け入れる（切り詰め等で破壊しない）
-      if (payload.memo.content.startsWith && payload.memo.content.startsWith(CONFIG.ENCRYPTION_PREFIX)) {
-        out.memo.content = payload.memo.content;
-      } else {
-        // content は受け取って正規化する（制御文字や長さ制限を適用）
-        out.memo.content = sanitizeStringForMemo(payload.memo.content, CONFIG.DEFAULT_LIMIT.value);
-      }
-    } else {
-      out.memo.content = '';
-    }
-    out.memo.updatedAt = isValidTimestamp(payload.memo.updatedAt) ? payload.memo.updatedAt : new Date().toISOString();
-  }
-
-  // settings (任意) - 入力制限に関係する項目のみ検証
-  out.settings = {
-    limitType: CONFIG.DEFAULT_LIMIT.type,
-    limitValue: CONFIG.DEFAULT_LIMIT.value
+  const sanitizeMeta = (m) => {
+    const meta = {};
+    meta.schemaVersion = (typeof m?.schemaVersion === 'number' && Number.isFinite(m?.schemaVersion)) ? m.schemaVersion : CONFIG.SCHEMA_VERSION;
+    meta.appVersion = isString(m?.appVersion) ? sanitizeStringForMemo(m.appVersion, 64) : CONFIG.APP_VERSION;
+    meta.createdAt = isValidTimestamp(m?.createdAt) ? m.createdAt : new Date().toISOString();
+    return meta;
   };
 
-  if (payload.settings && typeof payload.settings === 'object') {
-    const lt = payload.settings.limitType;
-    const lv = payload.settings.limitValue;
-    if (isString(lt) && (lt === CONFIG.LIMIT_TYPE.CHAR || lt === CONFIG.LIMIT_TYPE.BYTE)) {
-      out.settings.limitType = lt;
+  const sanitizeMemo = (mm) => {
+    const memo = { content: '', updatedAt: new Date().toISOString() };
+    if (typeof mm === 'object' && mm !== null) {
+      if (isString(mm.content)) {
+        if (mm.content?.startsWith(CONFIG.ENCRYPTION_PREFIX)) {
+          memo.content = mm.content;
+        } else {
+          memo.content = sanitizeStringForMemo(mm.content, CONFIG.DEFAULT_LIMIT.value);
+        }
+      }
+      memo.updatedAt = isValidTimestamp(mm.updatedAt) ? mm.updatedAt : new Date().toISOString();
     }
-    if (typeof lv === 'number' && !Number.isNaN(lv)) {
-      let v = Math.floor(lv);
-      if (v < 1) v = 1;
-      if (v > CONFIG.MAX_LIMIT_VALUE) v = CONFIG.MAX_LIMIT_VALUE;
-      out.settings.limitValue = v;
-    }
-  }
+    return memo;
+  };
 
-  // sync (任意) - 最低限の項目を受け入れる
-  out.sync = {};
-  if (payload.sync && typeof payload.sync === 'object') {
-    out.sync.lastSyncedAt = isValidTimestamp(payload.sync.lastSyncedAt) ? payload.sync.lastSyncedAt : null;
-    const lm = payload.sync.lastModifiedBy;
-    out.sync.lastModifiedBy = (isString(lm) && (lm === CONFIG.SYNC.MODIFIED_BY.LOCAL || lm === CONFIG.SYNC.MODIFIED_BY.CLOUD)) ? lm : CONFIG.SYNC.MODIFIED_BY.CLOUD;
-    out.sync.revision = (typeof payload.sync.revision === 'number' && Number.isFinite(payload.sync.revision) && payload.sync.revision >= 0) ? Math.floor(payload.sync.revision) : 0;
-  } else {
-    out.sync.lastSyncedAt = null;
-    out.sync.lastModifiedBy = CONFIG.SYNC.MODIFIED_BY.CLOUD;
-    out.sync.revision = 0;
-  }
+  const sanitizeSettings = (s) => {
+    const settings = { limitType: CONFIG.DEFAULT_LIMIT.type, limitValue: CONFIG.DEFAULT_LIMIT.value };
+    if (typeof s === 'object' && s !== null) {
+      const lt = s.limitType;
+      const lv = s.limitValue;
+      if (isString(lt) && (lt === CONFIG.LIMIT_TYPE.CHAR || lt === CONFIG.LIMIT_TYPE.BYTE)) {
+        settings.limitType = lt;
+      }
+      if (typeof lv === 'number' && !Number.isNaN(lv)) {
+        let v = Math.floor(lv);
+        if (v < 1) v = 1;
+        if (v > CONFIG.MAX_LIMIT_VALUE) v = CONFIG.MAX_LIMIT_VALUE;
+        settings.limitValue = v;
+      }
+    }
+    return settings;
+  };
+
+  const sanitizeSync = (sync) => {
+    const outSync = { lastSyncedAt: null, lastModifiedBy: CONFIG.SYNC.MODIFIED_BY.CLOUD, revision: 0 };
+    if (typeof sync === 'object' && sync !== null) {
+      outSync.lastSyncedAt = isValidTimestamp(sync.lastSyncedAt) ? sync.lastSyncedAt : null;
+      const lm = sync.lastModifiedBy;
+      outSync.lastModifiedBy = (isString(lm) && (lm === CONFIG.SYNC.MODIFIED_BY.LOCAL || lm === CONFIG.SYNC.MODIFIED_BY.CLOUD)) ? lm : CONFIG.SYNC.MODIFIED_BY.CLOUD;
+      outSync.revision = (typeof sync.revision === 'number' && Number.isFinite(sync.revision) && sync.revision >= 0) ? Math.floor(sync.revision) : 0;
+    }
+    return outSync;
+  };
+
+  out.meta = sanitizeMeta(payload.meta);
+  out.memo = sanitizeMemo(payload.memo);
+  out.settings = sanitizeSettings(payload.settings);
+  out.sync = sanitizeSync(payload.sync);
 
   return out;
 }

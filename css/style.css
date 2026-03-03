@@ -33,10 +33,7 @@ body {
   padding: 10px 20px;
   background-color: var(--bg-color);
   min-height: 100vh;
-}
-
-/* Make container a column flex so main can scroll while header/footer remain visible */
-.container {
+  /* Make container a column flex so main can scroll while header/footer remain visible */
   display: flex;
   flex-direction: column;
 }

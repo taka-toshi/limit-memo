@@ -8,7 +8,7 @@ export class AuthManager {
 
     // Initialize firebase if available and config provided
     try {
-      if (window.firebase && CONFIG.FIREBASE && CONFIG.FIREBASE.apiKey) {
+      if (window.firebase && CONFIG.FIREBASE?.apiKey) {
         if (!window.firebase.apps || window.firebase.apps.length === 0) {
           window.firebase.initializeApp(CONFIG.FIREBASE);
         }
@@ -67,13 +67,13 @@ export class AuthManager {
    * - `CONFIG.FIREBASE` を設定しておく必要があります
    */
   async loginWithFirebase() {
-    if (!window.firebase || !window.firebase.auth) {
+    if (!window.firebase?.auth) {
       throw new Error('Firebase SDK が読み込まれていません');
     }
 
     // Ensure firebase initialized
     if (!window.firebase.apps || window.firebase.apps.length === 0) {
-      if (CONFIG.FIREBASE && CONFIG.FIREBASE.apiKey) {
+      if (CONFIG.FIREBASE?.apiKey) {
         window.firebase.initializeApp(CONFIG.FIREBASE);
       } else {
         throw new Error('Firebase 設定がありません');
@@ -88,7 +88,7 @@ export class AuthManager {
       const result = await window.firebase.auth().signInWithPopup(provider);
       // OAuthCredential
       const credential = result.credential;
-      const accessToken = credential && credential.accessToken ? credential.accessToken : null;
+      const accessToken = credential?.accessToken ?? null;
 
       if (!accessToken) {
         throw new Error('GitHub access token を取得できませんでした');
@@ -106,7 +106,7 @@ export class AuthManager {
 
   async logout() {
     try {
-      if (window.firebase && window.firebase.auth) {
+      if (window.firebase?.auth) {
         await window.firebase.auth().signOut();
       }
     } catch (e) {
@@ -124,7 +124,7 @@ export class AuthManager {
    * - Firebase の recent login 要件でエラーが出る場合は再認証（popup）を試みます
    */
   async deleteAccount() {
-    if (!window.firebase || !window.firebase.auth) {
+    if (!window.firebase?.auth) {
       throw new Error('Firebase SDK が読み込まれていません');
     }
 
@@ -137,7 +137,7 @@ export class AuthManager {
       await user.delete();
     } catch (err) {
       // 再認証が必要なケース
-      if (err && err.code === 'auth/requires-recent-login') {
+      if (err?.code === 'auth/requires-recent-login') {
         try {
           const provider = new window.firebase.auth.GithubAuthProvider();
           provider.addScope('gist');
@@ -153,9 +153,9 @@ export class AuthManager {
           console.error('再認証に失敗しました:', reauthErr);
           throw new Error('アカウント削除に必要な再認証に失敗しました');
         }
-      } else {
+        } else {
         console.error('ユーザー削除エラー:', err);
-        throw new Error('アカウント削除に失敗しました: ' + (err && err.message ? err.message : err));
+        throw new Error('アカウント削除に失敗しました: ' + (err?.message ?? err));
       }
     }
 

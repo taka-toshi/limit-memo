@@ -215,7 +215,7 @@ export class GistRepository extends CloudRepository {
 
       // memo.json を含み、description が一致する Gist を探す
       for (const gist of gists) {
-        if (gist.files[CONFIG.GIST.FILENAME] && gist.description === 'Memo App Data by taka-toshi') {
+        if (gist.files?.[CONFIG.GIST.FILENAME] && gist.description === 'Memo App Data by taka-toshi') {
           this.gistId = gist.id;
           this._saveGistId();
           return;
