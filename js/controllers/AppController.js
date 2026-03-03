@@ -213,9 +213,9 @@ export class AppController {
         if (!modal) return;
 
           // blur focused elements inside modal (use safe existence checks)
-          if (confirmBtn && typeof confirmBtn.blur === 'function') confirmBtn.blur();
-          if (cancelBtn && typeof cancelBtn.blur === 'function') cancelBtn.blur();
           // return focus to opener before hiding
+          if (typeof confirmBtn.blur === 'function') confirmBtn.blur();
+          if (cancelBtn && typeof cancelBtn.blur === 'function') cancelBtn.blur();
           if (openBtn && typeof openBtn.focus === 'function') openBtn.focus();
 
         modal.style.display = 'none';
