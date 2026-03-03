@@ -237,6 +237,18 @@ section h2 {
   font-weight: bold;
 }
 
+/* 一時的なフィードバック用フラッシュ (Enter が無効化されたときなど) */
+.limit-info.flash {
+  box-shadow: 0 0 0 6px rgba(255, 152, 0, 0.08);
+  animation: flash-limit 360ms ease-in-out;
+}
+
+@keyframes flash-limit {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+  100% { transform: translateY(0); }
+}
+
 /* Sync Section */
 .sync-controls {
   display: flex;

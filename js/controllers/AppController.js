@@ -146,6 +146,36 @@ export class AppController {
       this.handleMemoInput(e.target.value);
     });
 
+    // Enter キーで改行しようとしたとき、入力制限で改行が消えてしまう現象を防ぐ
+    // - 現在の選択範囲を考慮して、Enter で挿入される結果が制限を超える場合は防止する
+    this.elements.memoInput.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter') return;
+      // IME 変換中は処理をさせない
+      if (e.isComposing) return;
+
+      const el = e.target;
+      try {
+        const value = el.value || '';
+        const start = typeof el.selectionStart === 'number' ? el.selectionStart : value.length;
+        const end = typeof el.selectionEnd === 'number' ? el.selectionEnd : value.length;
+
+        // 選択範囲がある場合は選択範囲が置き換わる想定
+        const newValue = value.slice(0, start) + '\n' + value.slice(end);
+
+        if (this.inputLimiter.isExceeded(newValue)) {
+          // 改行が入ると制限超過になる場合は Enter を無効化して、視覚フィードバック
+          e.preventDefault();
+          if (this.elements.limitInfo) {
+            this.elements.limitInfo.classList.add('flash');
+            setTimeout(() => this.elements.limitInfo.classList.remove('flash'), 400);
+          }
+        }
+      } catch (err) {
+        // 安全にフォールバック: エラーが出ても既存の挙動を壊さない
+        console.warn('Enter key check failed:', err);
+      }
+    });
+
     // ログインボタン
     this.elements.loginBtn.addEventListener('click', () => {
       this.handleLogin();
