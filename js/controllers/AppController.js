@@ -188,9 +188,9 @@ export class AppController {
         if (!modal) return;
 
         // blur any focused element inside modal first (check methods to avoid exceptions)
+        // return focus to opener before hiding modal
         if (cancelBtn && typeof cancelBtn.blur === 'function') cancelBtn.blur();
         if (confirmBtn && typeof confirmBtn.blur === 'function') confirmBtn.blur();
-        // return focus to opener before hiding modal
         if (openBtn && typeof openBtn.focus === 'function') openBtn.focus();
 
         modal.style.display = 'none';
@@ -323,7 +323,7 @@ export class AppController {
 
         // decryptedDraft がある -> 明文がある
         const source = this.decryptedDraft;
-        if (!password) {
+        if (password === '') {
           // 平文として保存（暗号解除）
           this.currentMemo.update(source);
           this.localRepo.saveMemo(this.currentMemo);
@@ -348,7 +348,7 @@ export class AppController {
       } else {
         // 未暗号化のメモ
         const source = this.currentMemo?.content || '';
-        if (!password) {
+        if (password === '') {
           alert('暗号化パスワードを入力してください');
           return;
         }
@@ -380,7 +380,7 @@ export class AppController {
       }
 
       const password = this.elements.encryptionPasswordInput?.value || '';
-      if (!password) {
+      if (password === '') {
         alert('復号パスワードを入力してください');
         return;
       }
@@ -408,7 +408,7 @@ export class AppController {
     }
 
     const password = this.elements.encryptionPasswordInput?.value || '';
-    if (!password) {
+    if (password === '') {
       return false;
     }
 
@@ -461,14 +461,8 @@ export class AppController {
     confirmBtn?.focus();
 
     const closeModal = () => {
-      // ensure no focused descendant remains inside modal
-      try { confirmBtn?.blur(); } catch (e) {}
-      try { cancelBtn?.blur(); } catch (e) {}
-      // move focus back to opener before hiding to avoid aria-hidden on focused ancestor
-      try { opener?.focus(); } catch (e) { /* ignore */ }
-      modal.style.display = 'none';
-      modal.setAttribute('aria-hidden', 'true');
-      modal.setAttribute('inert', '');
+      // 共通ユーティリティで DOM 操作を行い、イベントリスナの解除は呼び出し元で行う
+      this._hideModal(modal, opener, { confirmBtn, cancelBtn });
       confirmBtn.removeEventListener('click', onConfirm);
       cancelBtn.removeEventListener('click', closeModal);
     };
@@ -518,7 +512,6 @@ export class AppController {
   async handleManualSync() {
     if (!this.authManager.isAuthenticated()) {
       alert('同期するにはログインが必要です');
-      return;
     }else{
       try {
         this.updateSyncStatus('同期中...');
@@ -576,7 +569,7 @@ export class AppController {
    * @private
    */
   async _applyCloudSettingsToLocal(cloudData) {
-    if (!cloudData || !cloudData.settings) return;
+    if (!claudData?.settings) return;
     try {
       const normalized = this._normalizeLimitSettings(cloudData.settings);
       if (!normalized) return;
@@ -627,14 +620,7 @@ export class AppController {
     const cancelBtn = modal.querySelector('.cancel-btn');
 
     const closeModal = () => {
-      // ensure no focused descendant remains inside modal (check methods to avoid exceptions)
-      if (confirmBtn && typeof confirmBtn.blur === 'function') confirmBtn.blur();
-      if (cancelBtn && typeof cancelBtn.blur === 'function') cancelBtn.blur();
-      // return focus to opener before hiding
-      if (opener && typeof opener.focus === 'function') opener.focus();
-      modal.style.display = 'none';
-      modal.setAttribute('aria-hidden', 'true');
-      modal.setAttribute('inert', '');
+      this._hideModal(modal, opener, { confirmBtn, cancelBtn });
       confirmBtn.removeEventListener('click', onConfirm);
       cancelBtn.removeEventListener('click', closeModal);
     };
@@ -954,8 +940,7 @@ export class AppController {
     const normalized = (message || '').trim();
 
     if (!normalized) {
-      statusEl.classList.remove('show');
-      statusEl.classList.remove('idle');
+      statusEl.classList.remove('show', 'idle');
       statusEl.style.opacity = '0';
       statusEl.style.transform = 'translateX(-50%) translateY(12px)';
       if (textEl) textEl.textContent = '';
@@ -977,8 +962,7 @@ export class AppController {
     setTimeout(() => {
       const current = (textEl ? textEl.textContent : statusEl.textContent || '').trim();
       if (current === normalized) {
-        statusEl.classList.remove('show');
-        statusEl.classList.remove('idle');
+        statusEl.classList.remove('show', 'idle');
         statusEl.style.opacity = '0';
         statusEl.style.transform = 'translateX(-50%) translateY(12px)';
         if (textEl) textEl.textContent = '';
@@ -1016,5 +1000,28 @@ export class AppController {
     globalThis.addEventListener('offline', () => {
       this.transitionTo(CONFIG.APP_STATE.OFFLINE);
     });
+  }
+
+  /**
+   * 共通: モーダルを安全に非表示にするユーティリティ
+   * - フォーカスの除去・元の要素へのフォーカス復帰
+   * - aria 属性と表示を更新
+   * @param {HTMLElement} modal
+   * @param {HTMLElement} opener
+   * @param {{confirmBtn?:HTMLElement, cancelBtn?:HTMLElement}} controls
+   */
+  _hideModal(modal, opener, controls = {}) {
+    if (!modal) return;
+
+    const { confirmBtn, cancelBtn } = controls;
+
+    if (confirmBtn && typeof confirmBtn.blur === 'function') confirmBtn.blur();
+    if (cancelBtn && typeof cancelBtn.blur === 'function') cancelBtn.blur();
+
+    if (opener && typeof opener.focus === 'function') opener.focus();
+
+    modal.style.display = 'none';
+    modal.setAttribute('aria-hidden', 'true');
+    try { modal.setAttribute('inert', ''); } catch (_) {}
   }
 }
