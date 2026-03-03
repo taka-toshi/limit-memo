@@ -464,11 +464,11 @@ export class AppController {
     confirmBtn?.focus();
 
     const closeModal = () => {
-      // ensure no focused descendant remains inside modal
-      try { confirmBtn?.blur(); } catch (e) {}
-      try { cancelBtn?.blur(); } catch (e) {}
-      // move focus back to opener before hiding to avoid aria-hidden on focused ancestor
-      try { opener?.focus(); } catch (e) { /* ignore */ }
+      // ensure no focused descendant remains inside modal (use safe checks)
+      if (confirmBtn && typeof confirmBtn.blur === 'function') confirmBtn.blur();
+      if (cancelBtn && typeof cancelBtn.blur === 'function') cancelBtn.blur();
+      // move focus back to opener before hiding to avoid aria_hidden on focused ancestor
+      if (opener && typeof opener.focus === 'function') opener.focus();
       modal.style.display = 'none';
       modal.setAttribute('aria-hidden', 'true');
       modal.setAttribute('inert', '');
