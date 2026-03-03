@@ -23,6 +23,7 @@ export class AuthManager {
                 const authData = JSON.parse(stored);
                 this.accessToken = authData.accessToken || null;
               } catch (e) {
+                console.error('Failed to load auth data:', e);
                 this.accessToken = null;
               }
             }

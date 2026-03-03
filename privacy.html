@@ -44,52 +44,50 @@
 
 <body>
     <div id="policy-container">読み込み中…</div>
-    <script>
-        async function loadPolicy() {
-            try {
-                const res = await fetch('./privacy.md');
-                if (!res.ok) throw new Error('ロード失敗');
-                const md = await res.text();
-                // Try to load marked if available, otherwise render as pre
-                if (globalThis.marked) {
-                    // sanitize marked output before inserting into DOM
+    <script type="module">
+        try {
+            const res = await fetch('./privacy.md');
+            if (!res.ok) throw new Error('ロード失敗');
+            const md = await res.text();
+
+            // Try to load marked if available, otherwise render as pre
+            if (globalThis.marked) {
+                // sanitize marked output before inserting into DOM
+                const dirty = marked.parse(md);
+                const clean = DOMPurify.sanitize(dirty, {
+                    ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'ul', 'ol', 'li', 'code', 'pre', 'h1', 'h2', 'h3', 'blockquote', 'hr'],
+                    ALLOWED_ATTR: []
+                });
+                document.getElementById('policy-container').innerHTML = clean;
+            } else {
+                // dynamically load marked from CDN then render
+                const s = document.createElement('script');
+                s.src = 'https://cdn.jsdelivr.net/npm/marked/marked.min.js';
+                // For production, set SRI and crossorigin. Replace PLACEHOLDER with computed hash.
+                s.crossOrigin = 'anonymous';
+                s.integrity = 'sha384-948ahk4ZmxYVYOc+rxN1H2gM1EJ2Duhp7uHtZ4WSLkV4Vtx5MUqnV+l7u9B+jFv+';
+                s.onload = () => {
                     const dirty = marked.parse(md);
                     const clean = DOMPurify.sanitize(dirty, {
                         ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'ul', 'ol', 'li', 'code', 'pre', 'h1', 'h2', 'h3', 'blockquote', 'hr'],
                         ALLOWED_ATTR: []
                     });
                     document.getElementById('policy-container').innerHTML = clean;
-                } else {
-                    // dynamically load marked from CDN then render
-                    const s = document.createElement('script');
-                    s.src = 'https://cdn.jsdelivr.net/npm/marked/marked.min.js';
-                    // For production, set SRI and crossorigin. Replace PLACEHOLDER with computed hash.
-                    s.crossOrigin = 'anonymous';
-                    s.integrity = 'sha384-948ahk4ZmxYVYOc+rxN1H2gM1EJ2Duhp7uHtZ4WSLkV4Vtx5MUqnV+l7u9B+jFv+';
-                    s.onload = () => {
-                        const dirty = marked.parse(md);
-                        const clean = DOMPurify.sanitize(dirty, {
-                            ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'ul', 'ol', 'li', 'code', 'pre', 'h1', 'h2', 'h3', 'blockquote', 'hr'],
-                            ALLOWED_ATTR: []
-                        });
-                        document.getElementById('policy-container').innerHTML = clean;
-                    };
-                    s.onerror = () => {
-                        const pre = document.createElement('pre');
-                        pre.textContent = md;
-                        const c = document.getElementById('policy-container');
-                        c.textContent = '';
-                        c.appendChild(pre);
-                    };
-                    document.head.appendChild(s);
-                }
-            } catch (e) {
-                const c = document.getElementById('policy-container');
-                c.textContent = 'ポリシーの読み込みに失敗しました。';
-                console.error(e);
+                };
+                s.onerror = () => {
+                    const pre = document.createElement('pre');
+                    pre.textContent = md;
+                    const c = document.getElementById('policy-container');
+                    c.textContent = '';
+                    c.appendChild(pre);
+                };
+                document.head.appendChild(s);
             }
+        } catch (e) {
+            const c = document.getElementById('policy-container');
+            c.textContent = 'ポリシーの読み込みに失敗しました。';
+            console.error(e);
         }
-        loadPolicy();
     </script>
 </body>
 
