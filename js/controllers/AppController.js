@@ -54,36 +54,9 @@ export class AppController {
     
     // Service Worker登録
     await this.registerServiceWorker();
-    
-    // ローカルデータ読み込み
-    const localData = this.localRepo.load();
-    if (localData) {
-      this.currentMemo = Memo.fromJSON(localData.memo);
-    } else {
-      this.currentMemo = new Memo();
-      this.localRepo.initialize();
-    }
-    
-    // 設定（制限タイプ/制限値）を読み込む
-    try {
-      const storedSettings = localStorage.getItem(CONFIG.SETTINGS_KEY);
-      if (storedSettings) {
-        const s = JSON.parse(storedSettings);
-        if (typeof s?.limitType === 'string' && typeof s?.limitValue === 'number') {
-          if (s.limitValue < 1) s.limitValue = 1;
-          if (s.limitValue > CONFIG.MAX_LIMIT_VALUE) s.limitValue = CONFIG.MAX_LIMIT_VALUE;
-          if (s.limitType !== CONFIG.LIMIT_TYPE.CHAR && s.limitType !== CONFIG.LIMIT_TYPE.BYTE) {
-            s.limitType = CONFIG.LIMIT_TYPE.DEFAULT_LIMIT.type;
-          }
-          this.inputLimiter.setLimit(s.limitType, s.limitValue);
-          // UI反映
-          this.elements.limitTypeSelect.value = s.limitType;
-          this.elements.limitValueInput.value = s.limitValue;
-        }
-      }
-    } catch (e) {
-      console.warn('Failed to load settings:', e);
-    }
+    // ローカルデータ読み込みと保存された設定の適用
+    await this._loadLocalMemo();
+    await this._applyStoredSettingsFromLocalStorage();
 
     // UI更新
     this.updateUI();
@@ -98,6 +71,38 @@ export class AppController {
     
     // オンライン/オフライン監視
     this.setupNetworkMonitoring();
+  }
+
+  async _loadLocalMemo() {
+    try {
+      const localData = this.localRepo.load();
+      if (localData) {
+        this.currentMemo = Memo.fromJSON(localData.memo);
+      } else {
+        this.currentMemo = new Memo();
+        this.localRepo.initialize();
+      }
+    } catch (e) {
+      console.warn('Failed to load local memo data:', e);
+      this.currentMemo = new Memo();
+      try { this.localRepo.initialize(); } catch (_) {}
+    }
+  }
+
+  async _applyStoredSettingsFromLocalStorage() {
+    try {
+      const storedSettings = localStorage.getItem(CONFIG.SETTINGS_KEY);
+      if (!storedSettings) return;
+      const s = JSON.parse(storedSettings);
+      const normalized = this._normalizeLimitSettings(s);
+      if (!normalized) return;
+
+      this.inputLimiter.setLimit(normalized.limitType, normalized.limitValue);
+      if (this.elements.limitTypeSelect) this.elements.limitTypeSelect.value = normalized.limitType;
+      if (this.elements.limitValueInput) this.elements.limitValueInput.value = normalized.limitValue;
+    } catch (e) {
+      console.warn('Failed to load settings:', e);
+    }
   }
 
   /**
@@ -182,11 +187,11 @@ export class AppController {
       cancelBtn.addEventListener('click', () => {
         if (!modal) return;
 
-        // blur any focused element inside modal first
-        try { cancelBtn.blur(); } catch (e) {}
-        try { confirmBtn.blur(); } catch (e) {}
+        // blur any focused element inside modal first (check methods to avoid exceptions)
+        if (cancelBtn && typeof cancelBtn.blur === 'function') cancelBtn.blur();
+        if (confirmBtn && typeof confirmBtn.blur === 'function') confirmBtn.blur();
         // return focus to opener before hiding modal
-        try { openBtn?.focus(); } catch (e) {}
+        if (openBtn && typeof openBtn.focus === 'function') openBtn.focus();
 
         modal.style.display = 'none';
         modal.setAttribute('aria-hidden', 'true');
@@ -489,10 +494,10 @@ export class AppController {
         successModal.removeAttribute('inert');
         const successCloseBtn = successModal.querySelector('.close-btn');
         const closeSuccess = () => {
-          // ensure focus is removed from close button
-          try { successCloseBtn?.blur(); } catch (e) {}
+          // ensure focus is removed from close button (check method exists)
+          if (successCloseBtn && typeof successCloseBtn.blur === 'function') successCloseBtn.blur();
           // return focus to opener when closing success modal
-          try { opener?.focus(); } catch (e) { }
+          if (opener && typeof opener.focus === 'function') opener.focus();
           successModal.style.display = 'none';
           successModal.setAttribute('aria-hidden', 'true');
           successModal.setAttribute('inert', '');
@@ -573,27 +578,38 @@ export class AppController {
   async _applyCloudSettingsToLocal(cloudData) {
     if (!cloudData || !cloudData.settings) return;
     try {
-      const s = cloudData.settings;
-      if (typeof s?.limitType === 'string' && typeof s?.limitValue === 'number') {
-        if (s.limitValue < 1) s.limitValue = 1;
-        if (s.limitValue > CONFIG.MAX_LIMIT_VALUE) s.limitValue = CONFIG.MAX_LIMIT_VALUE;
-        if (s.limitType !== CONFIG.LIMIT_TYPE.CHAR && s.limitType !== CONFIG.LIMIT_TYPE.BYTE) s.limitType = CONFIG.DEFAULT_LIMIT.type;
-        this.inputLimiter.setLimit(s.limitType || CONFIG.DEFAULT_LIMIT.type, s.limitValue || CONFIG.DEFAULT_LIMIT.value);
-        // UI要素も更新
-        if (this.elements.limitTypeSelect) this.elements.limitTypeSelect.value = this.inputLimiter.limitType;
-        if (this.elements.limitValueInput) this.elements.limitValueInput.value = this.inputLimiter.limitValue;
-      }
+      const normalized = this._normalizeLimitSettings(cloudData.settings);
+      if (!normalized) return;
 
-      // 永続化して localRepo と整合させる
-      try {
-        const existing = this.localRepo.load() || this.localRepo._createInitialData();
-        existing.settings = { limitType: this.inputLimiter.limitType, limitValue: this.inputLimiter.limitValue };
-        this.localRepo.save(existing);
-      } catch (e) {
-        console.warn('Failed to persist cloud settings locally:', e);
-      }
+      this.inputLimiter.setLimit(normalized.limitType, normalized.limitValue);
+      if (this.elements.limitTypeSelect) this.elements.limitTypeSelect.value = this.inputLimiter.limitType;
+      if (this.elements.limitValueInput) this.elements.limitValueInput.value = this.inputLimiter.limitValue;
+
+      await this._persistSettingsToLocal();
     } catch (e) {
       console.warn('Failed to apply cloud settings:', e);
+    }
+  }
+
+  _normalizeLimitSettings(s) {
+    if (!s || (typeof s.limitType !== 'string' && typeof s.limitValue !== 'number')) return null;
+    const out = { limitType: s.limitType, limitValue: s.limitValue };
+    if (typeof out.limitValue !== 'number' || Number.isNaN(out.limitValue)) return null;
+    if (out.limitValue < 1) out.limitValue = 1;
+    if (out.limitValue > CONFIG.MAX_LIMIT_VALUE) out.limitValue = CONFIG.MAX_LIMIT_VALUE;
+    if (out.limitType !== CONFIG.LIMIT_TYPE.CHAR && out.limitType !== CONFIG.LIMIT_TYPE.BYTE) {
+      out.limitType = CONFIG.DEFAULT_LIMIT.type;
+    }
+    return out;
+  }
+
+  async _persistSettingsToLocal() {
+    try {
+      const existing = this.localRepo.load() || this.localRepo._createInitialData();
+      existing.settings = { limitType: this.inputLimiter.limitType, limitValue: this.inputLimiter.limitValue };
+      this.localRepo.save(existing);
+    } catch (e) {
+      console.warn('Failed to persist cloud settings locally:', e);
     }
   }
 
@@ -611,11 +627,11 @@ export class AppController {
     const cancelBtn = modal.querySelector('.cancel-btn');
 
     const closeModal = () => {
-      // ensure no focused descendant remains inside modal
-      try { confirmBtn?.blur(); } catch (e) {}
-      try { cancelBtn?.blur(); } catch (e) {}
+      // ensure no focused descendant remains inside modal (check methods to avoid exceptions)
+      if (confirmBtn && typeof confirmBtn.blur === 'function') confirmBtn.blur();
+      if (cancelBtn && typeof cancelBtn.blur === 'function') cancelBtn.blur();
       // return focus to opener before hiding
-      try { opener?.focus(); } catch (e) { }
+      if (opener && typeof opener.focus === 'function') opener.focus();
       modal.style.display = 'none';
       modal.setAttribute('aria-hidden', 'true');
       modal.setAttribute('inert', '');
@@ -841,7 +857,14 @@ export class AppController {
   updateUI(options = {}) {
     const encrypted = this.isCurrentMemoEncrypted();
 
-    // メモ表示（暗号化時は平文を描画しない）
+    this._renderMemoEditor(options, encrypted);
+    this._updateCountsAndLimitInfo();
+    this._updateEncryptionUI(encrypted);
+    this._updateAuthUI();
+    this._updateOfflineIndicator();
+  }
+
+  _renderMemoEditor(options = {}, encrypted) {
     if (encrypted) {
       if (this.decryptedDraft !== null) {
         if (!options.keepEditorValue) {
@@ -862,22 +885,32 @@ export class AppController {
       this.elements.memoInput.placeholder = 'ここにメモを入力してください...';
       this.decryptedDraft = null;
     }
-    
-    // 文字数・バイト数表示
+  }
+
+  _updateCountsAndLimitInfo() {
     const content = this.elements.memoInput.value;
     const charCount = content.length;
     const byteCount = new TextEncoder().encode(content).length;
     const usage = this.inputLimiter.calculateUsage(content);
     const remainder = this.inputLimiter.getRemainder(content);
-    
+
     this.elements.charCount.textContent = `${charCount} 文字`;
     this.elements.byteCount.textContent = `${byteCount} バイト`;
-    
-    // 入力設定の UI 値を現在の limiter 状態で上書き（クリア後などの同期用）
+
     if (this.elements.limitTypeSelect) this.elements.limitTypeSelect.value = this.inputLimiter.limitType;
     if (this.elements.limitValueInput) this.elements.limitValueInput.value = this.inputLimiter.limitValue;
 
-    // 暗号化UI表示
+    const limitType = this.inputLimiter.limitType === CONFIG.LIMIT_TYPE.CHAR ? '文字' : 'バイト';
+    this.elements.limitInfo.textContent = `制限: ${usage} / ${this.inputLimiter.limitValue} ${limitType} (残り ${remainder})`;
+
+    if (remainder < 20) {
+      this.elements.limitInfo.classList.add('warning');
+    } else {
+      this.elements.limitInfo.classList.remove('warning');
+    }
+  }
+
+  _updateEncryptionUI(encrypted) {
     if (this.elements.encryptMemoBtn) {
       this.elements.encryptMemoBtn.textContent = '暗号化して保存';
     }
@@ -895,29 +928,18 @@ export class AppController {
         this.elements.encryptionInfo.textContent = '現在: 暗号化済み（パスワードは保存されません）';
       }
     }
+  }
 
-    // 制限情報表示
-    const limitType = this.inputLimiter.limitType === CONFIG.LIMIT_TYPE.CHAR ? '文字' : 'バイト';
-    this.elements.limitInfo.textContent = 
-      `制限: ${usage} / ${this.inputLimiter.limitValue} ${limitType} (残り ${remainder})`;
-    
-    // 残量警告
-    if (remainder < 20) {
-      this.elements.limitInfo.classList.add('warning');
-    } else {
-      this.elements.limitInfo.classList.remove('warning');
-    }
-    
-    // 認証状態によるUI切り替え
+  _updateAuthUI() {
     const isAuthenticated = this.authManager.isAuthenticated();
     this.elements.loginBtn.style.display = isAuthenticated ? 'none' : 'inline-block';
     this.elements.logoutBtn.style.display = isAuthenticated ? 'inline-block' : 'none';
     this.elements.syncBtn.style.display = isAuthenticated ? 'inline-block' : 'none';
     this.elements.deleteAccountBtn.style.display = isAuthenticated ? 'inline-block' : 'none';
-    
-    // オフライン表示
-    this.elements.offlineIndicator.style.display = 
-      this.appState === CONFIG.APP_STATE.OFFLINE ? 'block' : 'none';
+  }
+
+  _updateOfflineIndicator() {
+    this.elements.offlineIndicator.style.display = this.appState === CONFIG.APP_STATE.OFFLINE ? 'block' : 'none';
   }
 
   /**
@@ -982,7 +1004,7 @@ export class AppController {
    * ネットワーク監視設定
    */
   setupNetworkMonitoring() {
-    window.addEventListener('online', () => {
+    globalThis.addEventListener('online', () => {
       if (this.authManager.isAuthenticated()) {
         this.transitionTo(CONFIG.APP_STATE.AUTHENTICATED);
         this.initialSync();
@@ -991,7 +1013,7 @@ export class AppController {
       }
     });
 
-    window.addEventListener('offline', () => {
+    globalThis.addEventListener('offline', () => {
       this.transitionTo(CONFIG.APP_STATE.OFFLINE);
     });
   }

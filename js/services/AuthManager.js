@@ -8,13 +8,13 @@ export class AuthManager {
 
     // Initialize firebase if available and config provided
     try {
-      if (window.firebase && CONFIG.FIREBASE?.apiKey) {
-        if (!window.firebase.apps || window.firebase.apps.length === 0) {
-          window.firebase.initializeApp(CONFIG.FIREBASE);
+      if (globalThis.firebase && CONFIG.FIREBASE?.apiKey) {
+        if (!globalThis.firebase.apps || globalThis.firebase.apps.length === 0) {
+          globalThis.firebase.initializeApp(CONFIG.FIREBASE);
         }
 
         // Listen for Firebase auth state changes
-        window.firebase.auth().onAuthStateChanged(async (user) => {
+        globalThis.firebase.auth().onAuthStateChanged(async (user) => {
           if (user) {
             // access token may not persist across sessions; we rely on localStorage backup
             const stored = localStorage.getItem(CONFIG.AUTH_KEY);
@@ -67,25 +67,25 @@ export class AuthManager {
    * - `CONFIG.FIREBASE` を設定しておく必要があります
    */
   async loginWithFirebase() {
-    if (!window.firebase?.auth) {
+    if (!globalThis.firebase?.auth) {
       throw new Error('Firebase SDK が読み込まれていません');
     }
 
     // Ensure firebase initialized
-    if (!window.firebase.apps || window.firebase.apps.length === 0) {
+    if (!globalThis.firebase.apps || globalThis.firebase.apps.length === 0) {
       if (CONFIG.FIREBASE?.apiKey) {
-        window.firebase.initializeApp(CONFIG.FIREBASE);
+        globalThis.firebase.initializeApp(CONFIG.FIREBASE);
       } else {
         throw new Error('Firebase 設定がありません');
       }
     }
 
-    const provider = new window.firebase.auth.GithubAuthProvider();
+    const provider = new globalThis.firebase.auth.GithubAuthProvider();
     // Request gist scope
     provider.addScope('gist');
 
     try {
-      const result = await window.firebase.auth().signInWithPopup(provider);
+      const result = await globalThis.firebase.auth().signInWithPopup(provider);
       // OAuthCredential
       const credential = result.credential;
       const accessToken = credential?.accessToken ?? null;
@@ -106,8 +106,8 @@ export class AuthManager {
 
   async logout() {
     try {
-      if (window.firebase?.auth) {
-        await window.firebase.auth().signOut();
+      if (globalThis.firebase?.auth) {
+        await globalThis.firebase.auth().signOut();
       }
     } catch (e) {
       console.warn('Firebase signOut failed:', e);
@@ -124,11 +124,10 @@ export class AuthManager {
    * - Firebase の recent login 要件でエラーが出る場合は再認証（popup）を試みます
    */
   async deleteAccount() {
-    if (!window.firebase?.auth) {
+    if (!globalThis.firebase?.auth) {
       throw new Error('Firebase SDK が読み込まれていません');
     }
-
-    const user = window.firebase.auth().currentUser;
+    const user = globalThis.firebase.auth().currentUser;
     if (!user) {
       throw new Error('ログインユーザーが見つかりません');
     }
@@ -139,11 +138,11 @@ export class AuthManager {
       // 再認証が必要なケース
       if (err?.code === 'auth/requires-recent-login') {
         try {
-          const provider = new window.firebase.auth.GithubAuthProvider();
+          const provider = new globalThis.firebase.auth.GithubAuthProvider();
           provider.addScope('gist');
           await window.firebase.auth().signInWithPopup(provider);
           // 再度取得して削除
-          const reUser = window.firebase.auth().currentUser;
+          const reUser = globalThis.firebase.auth().currentUser;
           if (reUser) {
             await reUser.delete();
           } else {

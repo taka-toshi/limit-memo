@@ -10,5 +10,5 @@ document.addEventListener('DOMContentLoaded', async () => {
   await app.init();
 
   // グローバルからアクセス可能にする（デバッグ用）
-  window.memoApp = app;
+  globalThis.memoApp = app;
 });
