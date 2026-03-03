@@ -1031,6 +1031,10 @@ export class AppController {
 
     modal.style.display = 'none';
     modal.setAttribute('aria-hidden', 'true');
-    try { modal.setAttribute('inert', ''); } catch (_) {}
+    try {
+      modal.setAttribute('inert', '');
+    } catch (e) {
+      console.error(e);
+    }
   }
 }
