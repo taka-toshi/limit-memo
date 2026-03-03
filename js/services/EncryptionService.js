@@ -12,11 +12,11 @@ export class EncryptionService {
   }
 
   isAvailable() {
-    return !!(window.crypto && window.crypto.subtle);
+    return !!window.crypto?.subtle;
   }
 
   isEncryptedContent(content) {
-    return typeof content === 'string' && content.startsWith(CONFIG.ENCRYPTION_PREFIX);
+    return typeof content === 'string' && content?.startsWith(CONFIG.ENCRYPTION_PREFIX);
   }
 
   async encrypt(plainText, password) {
@@ -119,7 +119,7 @@ export class EncryptionService {
     let binary = '';
     for (let i = 0; i < bytes.length; i += chunkSize) {
       const chunk = bytes.subarray(i, i + chunkSize);
-      binary += String.fromCharCode(...chunk);
+      binary += String.fromCodePoint(...chunk);
     }
     return btoa(binary);
   }
@@ -128,7 +128,7 @@ export class EncryptionService {
     const binary = atob(base64);
     const bytes = new Uint8Array(binary.length);
     for (let i = 0; i < binary.length; i += 1) {
-      bytes[i] = binary.charCodeAt(i);
+      bytes[i] = binary.codePointAt(i);
     }
     return bytes;
   }

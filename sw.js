@@ -96,7 +96,7 @@ self.addEventListener('fetch', (event) => {
     fetch(request)
       .then((response) => {
         // ネットワークから取得成功 → キャッシュを更新
-        if (response && response.status === 200) {
+        if (response?.status === 200) {
           const responseClone = response.clone();
           // Only attempt to cache same-origin http(s) responses
           try {
@@ -138,15 +138,37 @@ self.addEventListener('fetch', (event) => {
  * アプリからの指示を受け取る
  */
 self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
+  // 受信元 origin を検証して同一オリジン以外は無視する
+  let sourceOrigin = null;
+  try {
+    if (event.source && event.source.url) {
+      sourceOrigin = new URL(event.source.url).origin;
+    } else if (event.origin) {
+      sourceOrigin = event.origin;
+    }
+  } catch (e) {
+    sourceOrigin = null;
   }
-  
-  if (event.data && event.data.type === 'CACHE_URLS') {
+
+  // 許可する origin（現在は同一オリジンのみ）
+  const allowedOrigins = [self.location?.origin].filter(Boolean);
+
+  if (!sourceOrigin || !allowedOrigins.includes(sourceOrigin)) {
+    // 信頼できない送信元からのメッセージは無視
+    return;
+  }
+
+  const msg = event.data || {};
+  if (msg.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+    return;
+  }
+
+  if (msg.type === 'CACHE_URLS' && Array.isArray(msg.urls)) {
     event.waitUntil(
-      caches.open(CACHE_NAME)
-        .then((cache) => cache.addAll(event.data.urls))
+      caches.open(CACHE_NAME).then((cache) => cache.addAll(msg.urls))
     );
+    return;
   }
 });
 

@@ -36,7 +36,9 @@
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
     <!-- DOMPurify: sanitize HTML generated from Markdown to prevent XSS -->
-    <script src="https://cdn.jsdelivr.net/npm/dompurify@2.4.0/dist/purify.min.js"></script>
+    <!-- Add `integrity` (SRI) and `crossorigin` in production. Replace PLACEHOLDER with real hash. -->
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@2.4.0/dist/purify.min.js" crossorigin="anonymous"
+        integrity="sha384-PLACEHOLDER"></script>
 </head>
 
 <body>
@@ -60,6 +62,9 @@
                     // dynamically load marked from CDN then render
                     const s = document.createElement('script');
                     s.src = 'https://cdn.jsdelivr.net/npm/marked/marked.min.js';
+                    // For production, set SRI and crossorigin. Replace PLACEHOLDER with computed hash.
+                    s.crossOrigin = 'anonymous';
+                    s.integrity = 'sha384-948ahk4ZmxYVYOc+rxN1H2gM1EJ2Duhp7uHtZ4WSLkV4Vtx5MUqnV+l7u9B+jFv+';
                     s.onload = () => {
                         const dirty = marked.parse(md);
                         const clean = DOMPurify.sanitize(dirty, {

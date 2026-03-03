@@ -97,7 +97,7 @@ export class LocalStorageRepository {
    */
   loadMemo() {
     const data = this.load();
-    if (!data || !data.memo) {
+        if (!data?.memo) {
       return null;
     }
     return Memo.fromJSON(data.memo);
