@@ -738,9 +738,9 @@ export class AppController {
   }
 
   sanitizeBasic(value) {
-    return value
+    return String(value)
       .replace(/\u0000/g, '')        // NULL文字
-      .replace(/\r\n?/g, '\n')      // 改行を統一
+      .replace(/\r\n?/g, '\n');     // 改行を統一
   }
 
   /**
