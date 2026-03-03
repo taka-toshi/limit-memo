@@ -53,7 +53,7 @@
       <!-- メモ入力エリア -->
       <section class="memo-section">
         <h2>メモ</h2>
-        <textarea id="memoInput" placeholder="ここにメモを入力してください..." spellcheck="false"></textarea>
+        <textarea id="memoInput" placeholder="ここにメモを入力してください..." spellcheck="false" autocomplete="off"></textarea>
 
         <!-- カウント表示 -->
         <div class="count-info">
@@ -63,6 +63,18 @@
         <div id="limitInfo" class="limit-info">
           制限: 0 / 200 文字 (残り 200)
         </div>
+      </section>
+
+      <section class="encryption-section">
+        <h2>暗号化（オプション）</h2>
+        <div class="encryption-controls">
+          <label for="encryptionPassword">パスワード:</label>
+          <input type="password" id="encryptionPassword" autocomplete="off" placeholder="任意のパスワード">
+          <button id="encryptMemoBtn" class="btn btn-secondary" type="button">暗号化して保存</button>
+          <button id="decryptMemoBtn" class="btn" type="button">復号</button>
+        </div>
+        <p id="encryptionInfo" class="encryption-info">現在: 平文（暗号化なし）</p>
+        <p class="note">暗号化に使うパスワードは端末にもGistにも保存されません。忘れると復号できません。</p>
       </section>
 
       <!-- 同期コントロール -->
@@ -139,6 +151,7 @@
         <ul>
           <li><strong>ローカル保存:</strong> 入力内容は自動的に端末に保存されます</li>
           <li><strong>クラウド同期:</strong> GitHub でログインすると、複数端末でメモを共有できます</li>
+          <li><strong>暗号化（任意）:</strong> パスワードでメモ本文を暗号化してから同期できます（鍵は保存されません）</li>
           <li><strong>オフライン対応:</strong> ネットワーク接続がなくても使用できます</li>
           <li><strong>PWA対応:</strong> ホーム画面に追加してアプリのように使用できます</li>
         </ul>

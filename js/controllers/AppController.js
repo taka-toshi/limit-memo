@@ -7,6 +7,7 @@ import { LocalStorageRepository } from '../services/LocalStorageRepository.js';
 import { GistRepository } from '../services/GistRepository.js';
 import { SyncManager } from '../services/SyncManager.js';
 import { AuthManager } from '../services/AuthManager.js';
+import { EncryptionService } from '../services/EncryptionService.js';
 
 /**
  * AppController - UI と内部ロジックの仲介役
@@ -26,6 +27,7 @@ export class AppController {
     this.authManager = new AuthManager();
     this.cloudRepo = new GistRepository(this.authManager);
     this.syncManager = new SyncManager(this.localRepo, this.cloudRepo);
+    this.encryptionService = new EncryptionService();
     
     // 現在のメモ
     this.currentMemo = null;
@@ -35,6 +37,9 @@ export class AppController {
     
     // 自動同期タイマー
     this.autoSyncTimer = null;
+
+    // 暗号化メモを復号して編集中の場合の一時バッファ（永続化しない）
+    this.decryptedDraft = null;
   }
 
   /**
@@ -114,6 +119,10 @@ export class AppController {
       cancelClearMemoBtn: document.getElementById('cancelClearMemoBtn'),
       limitTypeSelect: document.getElementById('limitType'),
       limitValueInput: document.getElementById('limitValue'),
+      encryptionPasswordInput: document.getElementById('encryptionPassword'),
+      encryptMemoBtn: document.getElementById('encryptMemoBtn'),
+      decryptMemoBtn: document.getElementById('decryptMemoBtn'),
+      encryptionInfo: document.getElementById('encryptionInfo'),
       offlineIndicator: document.getElementById('offlineIndicator'),
       logoutConfirmModal: document.getElementById('logoutConfirmModal'),
       accountDeleteConfirmModal: document.getElementById('accountDeleteConfirmModal'),
@@ -212,6 +221,18 @@ export class AppController {
     this.elements.limitValueInput.addEventListener('change', (e) => {
       this.handleLimitChange();
     });
+
+    if (this.elements.encryptMemoBtn) {
+      this.elements.encryptMemoBtn.addEventListener('click', async () => {
+        await this.handleEncryptMemo();
+      });
+    }
+
+    if (this.elements.decryptMemoBtn) {
+      this.elements.decryptMemoBtn.addEventListener('click', async () => {
+        await this.handleDecryptMemo();
+      });
+    }
   }
 
   /**
@@ -219,6 +240,18 @@ export class AppController {
    * @param {string} value
    */
   handleMemoInput(value) {
+    if (this.isCurrentMemoEncrypted() && this.decryptedDraft !== null) {
+      if (this.inputLimiter.isExceeded(value)) {
+        value = this.inputLimiter.truncate(value);
+        this.elements.memoInput.value = value;
+      }
+
+      this.decryptedDraft = this.sanitizeBasic(value);
+      this.updateUI({ keepEditorValue: true });
+      this.updateSyncStatus('暗号化メモ編集中です。「暗号化保存」で保存されます');
+      return;
+    }
+
     // 入力制限チェック
     if (this.inputLimiter.isExceeded(value)) {
       value = this.inputLimiter.truncate(value);
@@ -236,6 +269,101 @@ export class AppController {
     
     // 自動同期スケジュール（デバウンス）
     this.scheduleAutoSync();
+  }
+
+  /**
+   * メモを暗号化して保存
+   */
+  async handleEncryptMemo() {
+    try {
+      const password = this.elements.encryptionPasswordInput?.value || '';
+      if (!password) {
+        alert('暗号化パスワードを入力してください');
+        return;
+      }
+
+      if (!this.encryptionService.isAvailable()) {
+        alert('このブラウザでは暗号化機能を利用できません');
+        return;
+      }
+
+      const source = this.decryptedDraft !== null
+        ? this.decryptedDraft
+        : (this.currentMemo?.content || '');
+
+      const encryptedPayload = await this.encryptionService.encrypt(source, password);
+      const encryptedContent = this.encryptionService.serialize(encryptedPayload);
+
+      this.currentMemo.update(encryptedContent);
+      this.localRepo.saveMemo(this.currentMemo);
+      this.decryptedDraft = source;
+
+      this.updateUI();
+      this.scheduleAutoSync();
+      this.updateSyncStatus('メモを暗号化して保存しました（表示は平文のままです）');
+    } catch (error) {
+      console.error('Encrypt memo failed:', error);
+      alert('暗号化に失敗しました: ' + (error.message || error));
+      this.updateSyncStatus('暗号化に失敗しました');
+    }
+  }
+
+  /**
+   * 暗号化メモを復号（セッション表示のみ）
+   */
+  async handleDecryptMemo() {
+    try {
+      if (!this.isCurrentMemoEncrypted()) {
+        this.updateSyncStatus('このメモは暗号化されていません');
+        return;
+      }
+
+      const password = this.elements.encryptionPasswordInput?.value || '';
+      if (!password) {
+        alert('復号パスワードを入力してください');
+        return;
+      }
+
+      const payload = this.encryptionService.deserialize(this.currentMemo.content);
+      const plainText = await this.encryptionService.decrypt(payload, password);
+      this.decryptedDraft = plainText;
+
+      this.updateUI();
+      this.updateSyncStatus('復号しました（このセッションの表示のみ）');
+    } catch (error) {
+      console.error('Decrypt memo failed:', error);
+      alert('復号に失敗しました: ' + (error.message || error));
+      this.updateSyncStatus('復号に失敗しました');
+    }
+  }
+
+  /**
+   * 手動同期時に、入力済みパスワードで自動復号を試行
+   * @returns {Promise<boolean>} 自動復号できた場合 true
+   */
+  async tryAutoDecryptWithInputPassword() {
+    if (!this.isCurrentMemoEncrypted()) {
+      return false;
+    }
+
+    const password = this.elements.encryptionPasswordInput?.value || '';
+    if (!password) {
+      return false;
+    }
+
+    try {
+      const payload = this.encryptionService.deserialize(this.currentMemo.content);
+      const plainText = await this.encryptionService.decrypt(payload, password);
+      this.decryptedDraft = plainText;
+      return true;
+    } catch (error) {
+      console.warn('Auto decrypt on manual sync failed:', error);
+      return false;
+    }
+  }
+
+  isCurrentMemoEncrypted() {
+    return this.encryptionService.isEncryptedContent(this.currentMemo?.content || '');
   }
 
   /**
@@ -345,6 +473,7 @@ export class AppController {
           const cloudData = this.syncManager.lastCloudData || await this.cloudRepo.read();
           if (cloudData) {
             this.currentMemo = Memo.fromJSON(cloudData.memo);
+            this.decryptedDraft = null;
             // cloud に含まれる settings があれば InputLimiter と UI に反映
             if (cloudData.settings) {
               try {
@@ -370,6 +499,16 @@ export class AppController {
                 console.warn('Failed to apply cloud settings:', e);
               }
             }
+
+            const autoDecrypted = await this.tryAutoDecryptWithInputPassword();
+            if (this.isCurrentMemoEncrypted()) {
+              if (autoDecrypted) {
+                this.updateSyncStatus('同期完了（入力済みパスワードで自動復号しました）');
+              } else {
+                this.updateSyncStatus('同期完了（暗号化メモです。パスワード入力で復号できます）');
+              }
+            }
+
             this.updateUI();
           }
         } else {
@@ -449,6 +588,10 @@ export class AppController {
 
       // メモ内容をクリア
       this.currentMemo = new Memo();
+      this.decryptedDraft = null;
+      if (this.elements.encryptionPasswordInput) {
+        this.elements.encryptionPasswordInput.value = '';
+      }
 
       // 入力制限（タイプ・値）をデフォルトに戻す
       try {
@@ -509,8 +652,12 @@ export class AppController {
       if (this.inputLimiter.isExceeded(currentValue)) {
         const truncated = this.inputLimiter.truncate(currentValue);
         this.elements.memoInput.value = truncated;
-        this.currentMemo.update(truncated);
-        this.localRepo.saveMemo(this.currentMemo);
+        if (this.isCurrentMemoEncrypted() && this.decryptedDraft !== null) {
+          this.decryptedDraft = this.sanitizeBasic(truncated);
+        } else {
+          this.currentMemo.update(truncated);
+          this.localRepo.saveMemo(this.currentMemo);
+        }
       }
       
       this.updateUI();
@@ -541,6 +688,7 @@ export class AppController {
       
       if (syncedData) {
         this.currentMemo = Memo.fromJSON(syncedData.memo);
+        this.decryptedDraft = null;
         // 同期された settings を反映
         if (syncedData.settings) {
           try {
@@ -598,10 +746,29 @@ export class AppController {
   /**
    * UI更新
    */
-  updateUI() {
-    // メモ表示
-    if (this.currentMemo && typeof this.currentMemo.content === 'string') {
-      this.elements.memoInput.value = this.currentMemo.content;
+  updateUI(options = {}) {
+    const encrypted = this.isCurrentMemoEncrypted();
+
+    // メモ表示（暗号化時は平文を描画しない）
+    if (encrypted) {
+      if (this.decryptedDraft !== null) {
+        if (!options.keepEditorValue) {
+          this.elements.memoInput.value = this.decryptedDraft;
+        }
+        this.elements.memoInput.disabled = false;
+        this.elements.memoInput.placeholder = '復号済み。編集後は「暗号化保存」を押してください';
+      } else {
+        this.elements.memoInput.value = '';
+        this.elements.memoInput.disabled = true;
+        this.elements.memoInput.placeholder = 'このメモは暗号化されています。パスワードを入力して復号してください';
+      }
+    } else {
+      if (this.currentMemo && typeof this.currentMemo.content === 'string' && !options.keepEditorValue) {
+        this.elements.memoInput.value = this.currentMemo.content;
+      }
+      this.elements.memoInput.disabled = false;
+      this.elements.memoInput.placeholder = 'ここにメモを入力してください...';
+      this.decryptedDraft = null;
     }
     
     // 文字数・バイト数表示
@@ -617,6 +784,25 @@ export class AppController {
     // 入力設定の UI 値を現在の limiter 状態で上書き（クリア後などの同期用）
     if (this.elements.limitTypeSelect) this.elements.limitTypeSelect.value = this.inputLimiter.limitType;
     if (this.elements.limitValueInput) this.elements.limitValueInput.value = this.inputLimiter.limitValue;
+
+    // 暗号化UI表示
+    if (this.elements.encryptMemoBtn) {
+      this.elements.encryptMemoBtn.textContent = encrypted ? '暗号化保存' : '暗号化して保存';
+    }
+    if (this.elements.decryptMemoBtn) {
+      this.elements.decryptMemoBtn.disabled = !encrypted;
+    }
+    if (this.elements.encryptionInfo) {
+      if (!this.encryptionService.isAvailable()) {
+        this.elements.encryptionInfo.textContent = 'このブラウザでは暗号化機能を利用できません';
+      } else if (!encrypted) {
+        this.elements.encryptionInfo.textContent = '現在: 平文（暗号化なし）';
+      } else if (this.decryptedDraft !== null) {
+        this.elements.encryptionInfo.textContent = '現在: 暗号化済み（表示は平文、保存データは暗号化）';
+      } else {
+        this.elements.encryptionInfo.textContent = '現在: 暗号化済み（パスワードは保存されません）';
+      }
+    }
 
     // 制限情報表示
     const limitType = this.inputLimiter.limitType === CONFIG.LIMIT_TYPE.CHAR ? '文字' : 'バイト';
