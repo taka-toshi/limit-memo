@@ -519,9 +519,7 @@ export class AppController {
    * 手動同期処理
    */
   async handleManualSync() {
-    if (!this.authManager.isAuthenticated()) {
-      alert('同期するにはログインが必要です');
-    }else{
+    if (this.authManager.isAuthenticated()) {
       try {
         this.updateSyncStatus('同期中...');
         await this.transitionTo(CONFIG.APP_STATE.SYNCING);
@@ -544,6 +542,8 @@ export class AppController {
         console.error('Manual sync failed:', error);
         this.updateSyncStatus('同期エラー（詳細はコンソール）');
       }
+    } else {
+      alert('同期するにはログインが必要です');
     }
   }
 
@@ -861,16 +861,16 @@ export class AppController {
 
   _renderMemoEditor(encrypted, options = {}) {
     if (encrypted) {
-      if (this.decryptedDraft !== null) {
+      if (this.decryptedDraft === null) {
+        this.elements.memoInput.value = '';
+        this.elements.memoInput.disabled = true;
+        this.elements.memoInput.placeholder = 'このメモは暗号化されています。パスワードを入力して復号してください。\nパスワードが未入力、または正しくない可能性があります。';
+      } else {
         if (!options.keepEditorValue) {
           this.elements.memoInput.value = this.decryptedDraft;
         }
         this.elements.memoInput.disabled = false;
         this.elements.memoInput.placeholder = '復号済み。編集後は「暗号化保存」を押してください';
-      } else {
-        this.elements.memoInput.value = '';
-        this.elements.memoInput.disabled = true;
-        this.elements.memoInput.placeholder = 'このメモは暗号化されています。パスワードを入力して復号してください。\nパスワードが未入力、または正しくない可能性があります。';
       }
     } else {
       if (typeof this.currentMemo?.content === 'string' && !options.keepEditorValue) {
@@ -917,10 +917,10 @@ export class AppController {
         this.elements.encryptionInfo.textContent = 'このブラウザでは暗号化機能を利用できません';
       } else if (!encrypted) {
         this.elements.encryptionInfo.textContent = '現在: 平文（暗号化なし）';
-      } else if (this.decryptedDraft !== null) {
-        this.elements.encryptionInfo.textContent = '現在: 暗号化済み（表示は平文、保存データは暗号化）';
-      } else {
+      } else if (this.decryptedDraft === null) {
         this.elements.encryptionInfo.textContent = '現在: 暗号化済み（パスワードは保存されません）';
+      } else {
+        this.elements.encryptionInfo.textContent = '現在: 暗号化済み（表示は平文、保存データは暗号化）';
       }
     }
   }
