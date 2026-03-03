@@ -89,7 +89,7 @@ globalThis.addEventListener('fetch', (event) => {
     }
   } catch (e) {
     // If URL parsing fails, skip handling
-    console.warn('Failed to parse URL:', request.url);
+    console.warn('Failed to parse URL:', e);
     return;
   }
   
@@ -110,7 +110,7 @@ globalThis.addEventListener('fetch', (event) => {
             }
           } catch (e) {
             // ignore
-            console.warn('Failed to parse URL:', request.url);
+            console.warn('Failed to parse URL:', e);
           }
         }
         return response;
