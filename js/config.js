@@ -9,6 +9,7 @@ export const CONFIG = {
   STORAGE_KEY: 'memo_data',
   SETTINGS_KEY: 'memo_settings',
   AUTH_KEY: 'auth_data',
+  ENCRYPTION_PREFIX: 'enc:v1:',
   
   // 入力制限タイプ
   LIMIT_TYPE: {
@@ -21,6 +22,9 @@ export const CONFIG = {
     type: 'CHAR',
     value: 200
   },
+
+  // システムが許容する最大の制限値（ユーザが設定できる上限）
+  MAX_LIMIT_VALUE: 5000,
   
   // 状態定義
   APP_STATE: {
@@ -55,5 +59,10 @@ export const CONFIG = {
     authDomain: "memo-app-19bb3.firebaseapp.com",
     projectId: "memo-app-19bb3",
     appId: "1:113269673283:web:e42960566b98e36d2173f6"
+  },
+  ENCRYPTION: {
+    KDF_ITERATIONS: 150000,
+    SALT_BYTES: 16,
+    IV_BYTES: 12
   }
 };

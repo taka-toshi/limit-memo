@@ -35,6 +35,8 @@
     </style>
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <!-- DOMPurify: sanitize HTML generated from Markdown to prevent XSS -->
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@2.4.0/dist/purify.min.js"></script>
 </head>
 
 <body>
@@ -47,13 +49,24 @@
                 const md = await res.text();
                 // Try to load marked if available, otherwise render as pre
                 if (window.marked) {
-                    document.getElementById('policy-container').innerHTML = marked.parse(md);
+                    // sanitize marked output before inserting into DOM
+                    const dirty = marked.parse(md);
+                    const clean = DOMPurify.sanitize(dirty, {
+                        ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'ul', 'ol', 'li', 'code', 'pre', 'h1', 'h2', 'h3', 'blockquote', 'hr'],
+                        ALLOWED_ATTR: []
+                    });
+                    document.getElementById('policy-container').innerHTML = clean;
                 } else {
                     // dynamically load marked from CDN then render
                     const s = document.createElement('script');
                     s.src = 'https://cdn.jsdelivr.net/npm/marked/marked.min.js';
                     s.onload = () => {
-                        document.getElementById('policy-container').innerHTML = marked.parse(md);
+                        const dirty = marked.parse(md);
+                        const clean = DOMPurify.sanitize(dirty, {
+                            ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'ul', 'ol', 'li', 'code', 'pre', 'h1', 'h2', 'h3', 'blockquote', 'hr'],
+                            ALLOWED_ATTR: []
+                        });
+                        document.getElementById('policy-container').innerHTML = clean;
                     };
                     s.onerror = () => {
                         const pre = document.createElement('pre');

@@ -2,6 +2,7 @@
 
 import { CloudRepository } from './CloudRepository.js';
 import { CONFIG } from '../config.js';
+import { sanitizeCloudPayload } from './Sanitizer.js';
 
 /**
  * GistRepository - GitHub Gist への保存を担当
@@ -104,7 +105,18 @@ export class GistRepository extends CloudRepository {
         return null;
       }
 
-      return JSON.parse(file.content);
+      try {
+        const parsed = JSON.parse(file.content);
+        const sanitized = sanitizeCloudPayload(parsed);
+        if (!sanitized) {
+          console.warn('Gist content did not match expected schema; ignoring');
+          return null;
+        }
+        return sanitized;
+      } catch (e) {
+        console.error('Failed to parse or sanitize gist content:', e);
+        return null;
+      }
     } catch (error) {
       console.error('Gist read failed:', error);
       throw error;

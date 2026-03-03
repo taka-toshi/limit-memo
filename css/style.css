@@ -20,7 +20,7 @@
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  line-height: 1.6;
+  line-height: 1.4;
   color: var(--text-color);
   background-color: #f5f5f5;
   padding: 0;
@@ -30,23 +30,33 @@ body {
 .container {
   max-width: 800px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 10px 20px;
   background-color: var(--bg-color);
   min-height: 100vh;
+}
+
+/* Make container a column flex so main can scroll while header/footer remain visible */
+.container {
+  display: flex;
+  flex-direction: column;
+}
+
+main {
+  flex: 1 1 auto;
+  overflow: auto;
 }
 
 /* Header */
 header {
   text-align: center;
-  padding: 20px 0;
+  padding: 10px 0;
   border-bottom: 2px solid var(--primary-color);
-  margin-bottom: 30px;
 }
 
 header h1 {
   font-size: 2rem;
   color: var(--primary-color);
-  margin-bottom: 5px;
+  margin-bottom: 4px;
 }
 
 .subtitle {
@@ -56,8 +66,8 @@ header h1 {
 
 /* Sections */
 section {
-  margin-bottom: 30px;
-  padding: 20px;
+  margin: 15px 0;
+  padding: 16px;
   background-color: var(--bg-color);
   border: 1px solid var(--border-color);
   border-radius: 8px;
@@ -67,7 +77,7 @@ section {
 section h2 {
   font-size: 1.3rem;
   color: var(--text-color);
-  margin-bottom: 15px;
+  margin-bottom: 10px;
   padding-bottom: 10px;
   border-bottom: 1px solid var(--border-color);
 }
@@ -81,6 +91,53 @@ section h2 {
   border-radius: 4px;
   margin-bottom: 20px;
   font-weight: bold;
+}
+
+.sync-status {
+  position: fixed;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%) translateY(12px);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 180px;
+  max-width: calc(100vw - 32px);
+  padding: 10px 14px;
+  border-radius: 999px;
+  background-color: rgba(33, 33, 33, 0.92);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 500;
+  box-shadow: var(--shadow);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 1200;
+}
+
+.sync-status.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.sync-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  animation: spin 0.9s linear infinite;
+}
+
+.sync-status.idle .sync-spinner {
+  display: none;
+}
+
+.sync-status-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Limit Settings */
@@ -103,15 +160,52 @@ section h2 {
   font-size: 1rem;
 }
 
-.settings-group input[type="number"] {
-  width: 120px;
+.encryption-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.encryption-controls label {
+  font-weight: 500;
+}
+
+.encryption-controls input[type="password"] {
+  min-width: 220px;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.encryption-info {
+  margin-top: 10px;
+  color: var(--text-color);
+  font-size: 0.9rem;
+}
+
+/* Help text under encryption controls */
+.encryption-help {
+  margin-top: 8px;
+  color: var(--text-color);
+  font-size: 0.95rem;
+}
+.encryption-help ul {
+  list-style: disc;
+  margin-left: 18px;
+  padding-left: 0;
+}
+.encryption-help li {
+  margin-bottom: 6px;
 }
 
 /* Memo Section */
 .memo-section textarea {
   width: 100%;
-  min-height: 300px;
-  padding: 15px;
+  min-height: 220px; /* reduce default to allow more visible chrome */
+  max-height: calc(100vh - 260px); /* avoid overflowing viewport on tall chrome */
+  padding: 12px;
   border: 1px solid var(--border-color);
   border-radius: 4px;
   font-size: 1rem;
@@ -126,7 +220,7 @@ section h2 {
 }
 
 .count-info {
-  margin-top: 10px;
+  margin-top: 5px;
   font-size: 0.9rem;
   color: var(--secondary-color);
 }
@@ -153,6 +247,8 @@ section h2 {
   flex-wrap: wrap;
   margin-bottom: 10px;
 }
+
+/* local-confirm-btns removed — use .modal-buttons for unified modal layout */
 
 .btn {
   padding: 10px 20px;
@@ -193,13 +289,7 @@ section h2 {
   color: white;
 }
 
-.sync-status {
-  min-height: 24px;
-  padding: 8px;
-  font-size: 0.9rem;
-  color: var(--success-color);
-  font-weight: 500;
-}
+/* clearMemoConfirm-specific styles removed — unified modal styles (see .modal, .modal-content) */
 
 /* Info Section */
 .info-section ul {
@@ -242,7 +332,7 @@ footer {
   color: var(--secondary-color);
   font-size: 0.9rem;
   border-top: 1px solid var(--border-color);
-  margin-top: 30px;
+  margin-top: 10px;
 }
 
 /* Responsive Design */
@@ -260,7 +350,8 @@ footer {
   }
 
   .memo-section textarea {
-    min-height: 200px;
+    min-height: 160px;
+    max-height: calc(100vh - 220px);
   }
 
   .settings-group {
@@ -268,8 +359,19 @@ footer {
     align-items: flex-start;
   }
 
-  .settings-group input[type="number"] {
+  .encryption-controls {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .encryption-controls input[type="password"] {
     width: 100%;
+    min-width: 0;
+  }
+
+  .settings-group input[type="number"] {
+    width: 4rem;
+    max-width: 4rem;
   }
 
   .sync-controls {
@@ -325,4 +427,62 @@ footer {
   border-top-color: white;
   border-radius: 50%;
   animation: spin 1s linear infinite;
+}
+
+/* Modal Styles */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: var(--bg-color);
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  text-align: center;
+  max-width: 400px;
+  width: 90%;
+}
+
+.modal-header {
+  font-size: 1.2rem;
+  margin-bottom: 10px;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.modal-buttons button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.modal-buttons .confirm-btn {
+  background-color: var(--danger-color);
+  color: white;
+}
+
+.modal-buttons .cancel-btn {
+  background-color: var(--secondary-color);
+  color: white;
+}
+
+.modal-buttons .close-btn {
+  background-color: var(--secondary-color);
+  color: white;
 }

@@ -25,6 +25,12 @@
       <p class="subtitle">n文字制限メモ - クラウド同期対応</p>
     </header>
 
+    <!-- グローバルステータス表示 -->
+    <div id="syncStatus" class="sync-status" role="status" aria-live="polite" aria-atomic="true">
+      <span class="sync-spinner" aria-hidden="true"></span>
+      <span class="sync-status-text"></span>
+    </div>
+
     <main>
       <!-- オフライン通知 -->
       <div id="offlineIndicator" class="offline-indicator" style="display: none;">
@@ -42,14 +48,15 @@
           </select>
 
           <label for="limitValue">制限値:</label>
-          <input type="number" id="limitValue" value="200" min="1" max="5000">
+          <input type="number" id="limitValue" value="200" min="1" max="5000"
+            onchange="if(this.value < 1) this.value = 1; else if(this.value > 5000) this.value = 5000;">
         </div>
       </section>
 
       <!-- メモ入力エリア -->
       <section class="memo-section">
         <h2>メモ</h2>
-        <textarea id="memoInput" placeholder="ここにメモを入力してください..." spellcheck="false"></textarea>
+        <textarea id="memoInput" placeholder="ここにメモを入力してください..." spellcheck="false" autocomplete="off"></textarea>
 
         <!-- カウント表示 -->
         <div class="count-info">
@@ -59,6 +66,26 @@
         <div id="limitInfo" class="limit-info">
           制限: 0 / 200 文字 (残り 200)
         </div>
+      </section>
+
+      <section class="encryption-section">
+        <h2>暗号化（オプション）</h2>
+        <div class="encryption-controls">
+          <label for="encryptionPassword">パスワード:</label>
+          <input type="password" id="encryptionPassword" autocomplete="off" placeholder="任意のパスワード">
+          <button id="encryptMemoBtn" class="btn btn-secondary" type="button">暗号化して保存</button>
+          <button id="decryptMemoBtn" class="btn" type="button">復号</button>
+        </div>
+        <p id="encryptionInfo" class="encryption-info">現在: 平文（暗号化なし）</p>
+        <div class="encryption-help">
+          <strong>操作ヒント</strong>
+          <ul>
+            <li>パスワード欄で Enter を押すと復号を試みます。</li>
+            <li>復号済みの状態でパスワード欄を空にして「暗号化して保存」を押すと、暗号を解除して平文として保存できます。</li>
+            <li>パスワードを変更する場合は、先に復号してから新しいパスワードを入力して「暗号化して保存」を押してください。</li>
+          </ul>
+        </div>
+        <p class="note">暗号化に使うパスワードは端末にもGistにも保存されません。忘れると復号できません。</p>
       </section>
 
       <!-- 同期コントロール -->
@@ -75,20 +102,59 @@
           の"View your gists"で確認できます。ファイル名は
           <code>memo.json</code> で、description は変更しないでください。
         </p>
-        <div id="syncStatus" class="sync-status"></div>
       </section>
       <section class="local-section">
         <h2>ローカル</h2>
-        <button id="clearMemoBtn" class="btn btn-warning">ローカルデータ削除</button>
-        <div id="clearMemoConfirm"
-          style="display:none;margin-top:8px;padding:8px;border:1px solid #e0e0e0;background:#fff8e1;">
-          <div>ローカルに保存されたメモを完全に削除します。復元できません。よろしいですか？</div>
-          <div style="margin-top:8px;">
-            <button id="confirmClearMemoBtn" class="btn">削除する</button>
-            <button id="cancelClearMemoBtn" class="btn" style="margin-left:8px;">キャンセル</button>
+        <button id="clearMemoBtn" class="btn btn-primary">ローカルデータ削除</button>
+      </section>
+
+      <!-- モーダル: ローカルデータ削除確認 (統一スタイル) -->
+      <div id="clearMemoConfirm" class="modal" aria-hidden="true" role="dialog" aria-modal="true" inert
+        style="display:none;">
+        <div class="modal-content" role="document">
+          <div class="modal-header">ローカルデータの削除</div>
+          <p>ローカルに保存されたメモを完全に削除します。復元できません。<br>また、クラウドとの連携が解除されます。<br>よろしいですか？</p>
+          <div class="modal-buttons">
+            <button id="confirmClearMemoBtn" class="confirm-btn btn btn-danger">削除する</button>
+            <button id="cancelClearMemoBtn" class="cancel-btn btn">キャンセル</button>
           </div>
         </div>
-      </section>
+      </div>
+
+      <!-- Logout Confirmation Modal -->
+      <div id="logoutConfirmModal" class="modal">
+        <div class="modal-content">
+          <div class="modal-header">ログアウト確認</div>
+          <p>ログアウトしますか？ローカルのデータは保持されます。</p>
+          <div class="modal-buttons">
+            <button class="confirm-btn">ログアウト</button>
+            <button class="cancel-btn">キャンセル</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Logout Success Modal -->
+      <div id="logoutSuccessModal" class="modal">
+        <div class="modal-content">
+          <div class="modal-header">ログアウト成功</div>
+          <p>GitHub連携を削除しました。</p>
+          <div class="modal-buttons">
+            <button class="close-btn">閉じる</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Account Deletion Confirmation Modal -->
+      <div id="accountDeleteConfirmModal" class="modal">
+        <div class="modal-content">
+          <div class="modal-header">アカウント削除確認</div>
+          <p>アカウントを完全に削除しますか？この操作は取り消せません。</p>
+          <div class="modal-buttons">
+            <button class="confirm-btn">削除</button>
+            <button class="cancel-btn">キャンセル</button>
+          </div>
+        </div>
+      </div>
 
       <!-- 説明 -->
       <section class="info-section">
@@ -96,6 +162,7 @@
         <ul>
           <li><strong>ローカル保存:</strong> 入力内容は自動的に端末に保存されます</li>
           <li><strong>クラウド同期:</strong> GitHub でログインすると、複数端末でメモを共有できます</li>
+          <li><strong>暗号化（任意）:</strong> パスワードでメモ本文を暗号化してから同期できます（鍵は保存されません）</li>
           <li><strong>オフライン対応:</strong> ネットワーク接続がなくても使用できます</li>
           <li><strong>PWA対応:</strong> ホーム画面に追加してアプリのように使用できます</li>
         </ul>
@@ -116,6 +183,7 @@
 
     <footer>
       <p>&copy; 2026 Memo App - n文字制限メモアプリ</p>
+      <br>
       <p><a href="privacy.html" target="_blank" rel="noopener">プライバシーポリシー</a></p>
     </footer>
   </div>

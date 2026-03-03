@@ -26,7 +26,7 @@ export class AuthManager {
                 this.accessToken = null;
               }
             }
-            this.authState = this.accessToken ? 'authenticated' : 'authenticated';
+            this.authState = 'authenticated';
           } else {
             this.accessToken = null;
             this.authState = 'unauthenticated';
