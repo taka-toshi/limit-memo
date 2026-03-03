@@ -5,12 +5,12 @@ import { CONFIG } from '../config.js';
 export function escapeHtml(str) {
   if (typeof str !== 'string') return '';
   return str
-    .replaceAll(/&/g, '&amp;')
-    .replaceAll(/</g, '&lt;')
-    .replaceAll(/>/g, '&gt;')
-    .replaceAll(/"/g, '&quot;')
-    .replaceAll(/'/g, '&#39;')
-    .replaceAll(/\//g, '&#x2F;');
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll('\'', '&#39;')
+    .replaceAll('/', '&#x2F;');
 }
 
 /** 簡易判定: 値が文字列か */
@@ -31,7 +31,7 @@ export function sanitizeStringForMemo(value, maxLen = CONFIG.MAX_LIMIT_VALUE) {
   let s = value.normalize ? value.normalize('NFC') : String(value);
 
   // NULL と制御文字（タブと改行は許可）を除去
-  s = s.replaceAll(/\u0000/g, '');
+  s = s.replaceAll('\u0000', '');
   s = s.replaceAll(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
 
   // 改行を統一
