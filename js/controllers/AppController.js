@@ -951,8 +951,7 @@ export class AppController {
   async registerServiceWorker() {
     if ('serviceWorker' in navigator) {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js');
-        /*console.log('Service Worker registered:', registration);*/
+        await navigator.serviceWorker.register('./sw.js');
       } catch (error) {
         console.error('Service Worker registration failed:', error);
       }
@@ -964,7 +963,6 @@ export class AppController {
    */
   setupNetworkMonitoring() {
     window.addEventListener('online', () => {
-      console.log('Network: online');
       if (this.authManager.isAuthenticated()) {
         this.transitionTo(CONFIG.APP_STATE.AUTHENTICATED);
         this.initialSync();
@@ -974,7 +972,6 @@ export class AppController {
     });
 
     window.addEventListener('offline', () => {
-      console.log('Network: offline');
       this.transitionTo(CONFIG.APP_STATE.OFFLINE);
     });
   }

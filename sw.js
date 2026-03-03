@@ -25,16 +25,16 @@ const ASSETS_TO_CACHE = [
  * 必要なアセットをキャッシュ
  */
 self.addEventListener('install', (event) => {
-  console.log('Service Worker: Installing...');
+  // Service Worker: Installing
   
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('Service Worker: Caching assets');
+        // Service Worker: Caching assets
         return cache.addAll(ASSETS_TO_CACHE);
       })
       .then(() => {
-        console.log('Service Worker: Installed');
+        // Service Worker: Installed
         return self.skipWaiting();
       })
       .catch((error) => {
@@ -48,7 +48,7 @@ self.addEventListener('install', (event) => {
  * 古いキャッシュを削除
  */
 self.addEventListener('activate', (event) => {
-  console.log('Service Worker: Activating...');
+  // Service Worker: Activating
   
   event.waitUntil(
     caches.keys()
@@ -56,14 +56,14 @@ self.addEventListener('activate', (event) => {
         return Promise.all(
           cacheNames.map((cacheName) => {
             if (cacheName !== CACHE_NAME) {
-              console.log('Service Worker: Deleting old cache:', cacheName);
+              // Deleting old cache: ${cacheName}
               return caches.delete(cacheName);
             }
           })
         );
       })
       .then(() => {
-        console.log('Service Worker: Activated');
+        // Service Worker: Activated
         return self.clients.claim();
       })
   );
@@ -118,12 +118,12 @@ self.addEventListener('fetch', (event) => {
         return caches.match(request)
           .then((cachedResponse) => {
             if (cachedResponse) {
-              console.log('Service Worker: Serving from cache:', request.url);
+              // Serving from cache: ${request.url}
               return cachedResponse;
             }
             
             // キャッシュにもない場合
-            console.log('Service Worker: No cache available for:', request.url);
+            // No cache available for: ${request.url}
             return new Response('Offline - Resource not available', {
               status: 503,
               statusText: 'Service Unavailable'
@@ -156,7 +156,7 @@ self.addEventListener('message', (event) => {
  */
 self.addEventListener('sync', (event) => {
   if (event.tag === 'sync-memo') {
-    console.log('Service Worker: Background sync triggered');
+    // Background sync triggered
     event.waitUntil(
       // ここで同期処理を実行
       // 実装例: IndexedDB から未同期データを取得してAPIに送信
