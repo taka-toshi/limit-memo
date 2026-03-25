@@ -20,11 +20,17 @@ jobs:
 
       - name: Replace Firebase config placeholders
         run: |
-          sed -i "s|__FIREBASE_API_KEY__|${{ secrets.FIREBASE_API_KEY }}|g" js/config.js
-          sed -i "s|__FIREBASE_AUTH_DOMAIN__|${{ secrets.FIREBASE_AUTH_DOMAIN }}|g" js/config.js
-          sed -i "s|__FIREBASE_PROJECT_ID__|${{ secrets.FIREBASE_PROJECT_ID }}|g" js/config.js
-          sed -i "s|__FIREBASE_APP_ID__|${{ secrets.FIREBASE_APP_ID }}|g" js/config.js
-          sed -i "s|__GIST_CLIENT_ID__|${{ secrets.GIST_CLIENT_ID }}|g" js/config.js
+          sed -i "s|__FIREBASE_API_KEY__|$FIREBASE_API_KEY|g" js/config.js
+          sed -i "s|__FIREBASE_AUTH_DOMAIN__|$FIREBASE_AUTH_DOMAIN|g" js/config.js
+          sed -i "s|__FIREBASE_PROJECT_ID__|$FIREBASE_PROJECT_ID|g" js/config.js
+          sed -i "s|__FIREBASE_APP_ID__|$FIREBASE_APP_ID|g" js/config.js
+          sed -i "s|__GIST_CLIENT_ID__|$GIST_CLIENT_ID|g" js/config.js
+        env:
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          FIREBASE_AUTH_DOMAIN: ${{ secrets.FIREBASE_AUTH_DOMAIN }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+          GIST_CLIENT_ID: ${{ secrets.GIST_CLIENT_ID }}
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
