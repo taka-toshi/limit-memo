@@ -49,16 +49,16 @@ export const CONFIG = {
     API_BASE: 'https://api.github.com',
     SCOPES: 'gist',
     // GitHub Device Flow / OAuth 用の Client ID (GitHub OAuth App の Client ID)
-    CLIENT_ID: 'Ov23lijn05y8VNP5pnRg' ,
+    CLIENT_ID: "__GIST_CLIENT_ID__",
     FILENAME: 'memo.json'
   }
   ,
   // Firebase 設定（Firebase Authentication を使用する場合にここを埋める）
   FIREBASE: {
-    apiKey: "AIzaSyBtPl8g3viM2O76VXWalW8n9dPvU7Tykvs",
-    authDomain: "memo-app-19bb3.firebaseapp.com",
-    projectId: "memo-app-19bb3",
-    appId: "1:113269673283:web:e42960566b98e36d2173f6"
+    apiKey: "__FIREBASE_API_KEY__",
+    authDomain: "__FIREBASE_AUTH_DOMAIN__",
+    projectId: "__FIREBASE_PROJECT_ID__",
+    appId: "__FIREBASE_APP_ID__"
   },
   ENCRYPTION: {
     KDF_ITERATIONS: 150000,
