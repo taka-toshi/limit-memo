@@ -412,6 +412,11 @@ export class AppController {
         return;
       }
 
+      if (this.decryptedDraft !== null) {
+        this.updateSyncStatus('すでに復号済みです（再復号は不要）');
+        return;
+      }
+
       const password = this.elements.encryptionPasswordInput?.value || '';
       if (password === '') {
         alert('復号パスワードを入力してください');
@@ -940,7 +945,7 @@ export class AppController {
       this.elements.encryptMemoBtn.textContent = '暗号化して保存';
     }
     if (this.elements.decryptMemoBtn) {
-      this.elements.decryptMemoBtn.disabled = !encrypted;
+      this.elements.decryptMemoBtn.disabled = !encrypted || this.decryptedDraft !== null;
     }
     if (this.elements.encryptionInfo) {
       if (!this.encryptionService.isAvailable()) {
