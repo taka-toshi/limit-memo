@@ -322,7 +322,7 @@ manifest.json やアイコンのパスも同様に調整：
   "start_url": "/memo-app/",
   "icons": [
     {
-      "src": "/memo-app/icons/icon-192.png",
+      "src": "",
       ...
     }
   ]
@@ -376,12 +376,12 @@ app.use((req, res, next) => {
 {
   "icons": [
     {
-      "src": "/icons/icon-192.webp",
+      "src": "data:image/svg+xml, <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'> <text x='50' y='50' text-anchor='middle' dominant-baseline='central' font-size='90'>📝</text> </svg>",
       "sizes": "192x192",
       "type": "image/webp"
     },
     {
-      "src": "/icons/icon-192.png",
+      "src": "data:image/svg+xml, <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'> <text x='50' y='50' text-anchor='middle' dominant-baseline='central' font-size='90'>📝</text> </svg>",
       "sizes": "192x192",
       "type": "image/png"
     }
