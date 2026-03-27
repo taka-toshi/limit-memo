@@ -41,6 +41,7 @@ export class AppController {
 
     // 暗号化メモを復号して編集中の場合の一時バッファ（永続化しない）
     this.decryptedDraft = null;
+    this.decryptedDraftDirty = false;
   }
 
   /**
@@ -301,6 +302,7 @@ export class AppController {
       }
 
       this.decryptedDraft = this.sanitizeBasic(value);
+      this.decryptedDraftDirty = true;
       this.updateUI({ keepEditorValue: true });
       this.updateSyncStatus('暗号化メモ編集中...');
       return;
@@ -362,6 +364,7 @@ export class AppController {
           this.localRepo.saveMemo(this.currentMemo);
           // セッションの復号バッファはクリア
           this.decryptedDraft = null;
+          this.decryptedDraftDirty = false;
           this.updateUI();
           this.scheduleAutoSync();
           this.updateSyncStatus('暗号解除して平文として保存しました');
@@ -373,6 +376,7 @@ export class AppController {
           this.currentMemo.update(encryptedContent);
           this.localRepo.saveMemo(this.currentMemo);
           // decryptedDraft は表示用に保持
+          this.decryptedDraftDirty = false;
           this.updateUI();
           this.scheduleAutoSync();
           this.updateSyncStatus('新しいパスワードで暗号化して保存しました');
@@ -390,6 +394,7 @@ export class AppController {
         this.currentMemo.update(encryptedContent);
         this.localRepo.saveMemo(this.currentMemo);
         this.decryptedDraft = source;
+        this.decryptedDraftDirty = false;
         this.updateUI();
         this.scheduleAutoSync();
         this.updateSyncStatus('暗号化して保存（表示は平文）');
@@ -426,6 +431,7 @@ export class AppController {
       const payload = this.encryptionService.deserialize(this.currentMemo.content);
       const plainText = await this.encryptionService.decrypt(payload, password);
       this.decryptedDraft = plainText;
+      this.decryptedDraftDirty = false;
 
       this.updateUI();
       this.updateSyncStatus('復号成功（このセッションのみ）');
@@ -556,6 +562,11 @@ export class AppController {
   async handleManualSync() {
     if (this.authManager.isAuthenticated()) {
       try {
+        const flushed = await this._flushEncryptedDraftToLocal();
+        if (!flushed) {
+          return;
+        }
+
         this.updateSyncStatus('同期中...');
         await this.transitionTo(CONFIG.APP_STATE.SYNCING);
         
@@ -590,6 +601,7 @@ export class AppController {
     try {
       this.currentMemo = Memo.fromJSON(cloudData.memo);
       this.decryptedDraft = null;
+      this.decryptedDraftDirty = false;
 
       await this._applyCloudSettingsToLocal(cloudData);
 
@@ -613,7 +625,7 @@ export class AppController {
    * @private
    */
   async _applyCloudSettingsToLocal(cloudData) {
-    if (!claudData?.settings) return;
+    if (!cloudData?.settings) return;
     try {
       const normalized = this._normalizeLimitSettings(cloudData.settings);
       if (!normalized) return;
@@ -811,6 +823,7 @@ export class AppController {
       if (syncedData) {
         this.currentMemo = Memo.fromJSON(syncedData.memo);
         this.decryptedDraft = null;
+        this.decryptedDraftDirty = false;
         // 同期された settings を反映
         if (syncedData.settings) {
           try {
@@ -845,9 +858,46 @@ export class AppController {
     this.autoSyncTimer = setTimeout(async () => {
       if (this.authManager.isAuthenticated() && 
           this.appState !== CONFIG.APP_STATE.OFFLINE) {
+        const flushed = await this._flushEncryptedDraftToLocal({ silent: true });
+        if (!flushed) {
+          return;
+        }
         await this.syncManager.syncToCloud();
       }
     }, 3000);
+  }
+
+  async _flushEncryptedDraftToLocal(options = {}) {
+    const { silent = false } = options;
+
+    if (!this.isCurrentMemoEncrypted() || this.decryptedDraft === null || !this.decryptedDraftDirty) {
+      return true;
+    }
+
+    const password = this.elements.encryptionPasswordInput?.value || '';
+    if (password === '') {
+      if (!silent) {
+        this.updateSyncStatus('編集内容を同期するにはパスワードを入力してください');
+        alert('暗号化メモの編集内容を同期するには、パスワード入力後に再度「同期」を押してください。');
+      }
+      return false;
+    }
+
+    try {
+      const encryptedPayload = await this.encryptionService.encrypt(this.decryptedDraft, password);
+      const encryptedContent = this.encryptionService.serialize(encryptedPayload);
+      this.currentMemo.update(encryptedContent);
+      this.localRepo.saveMemo(this.currentMemo);
+      this.decryptedDraftDirty = false;
+      return true;
+    } catch (error) {
+      console.error('Failed to flush encrypted draft before sync:', error);
+      if (!silent) {
+        this.updateSyncStatus('暗号化保存に失敗したため同期を中止しました');
+        alert('暗号化保存に失敗したため同期を中止しました: ' + (error.message || error));
+      }
+      return false;
+    }
   }
 
   /**
@@ -914,6 +964,7 @@ export class AppController {
       this.elements.memoInput.disabled = false;
       this.elements.memoInput.placeholder = 'ここにメモを入力してください...';
       this.decryptedDraft = null;
+      this.decryptedDraftDirty = false;
     }
   }
 

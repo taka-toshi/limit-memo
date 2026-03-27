@@ -90,8 +90,7 @@ memo-app/
 │       └── AppController.js
 └── icons/
     ├── icon_192.png
-    ├── icon_512.png
-    └── *.svg
+    └── icon_512.png
 ```
 
 ## GitHub認証の設定
