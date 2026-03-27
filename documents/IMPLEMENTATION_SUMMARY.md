@@ -15,20 +15,24 @@ memo-app/
 ├── sw.js                          # Service Worker
 ├── css/
 │   └── style.css                  # スタイルシート
-└── js/
-   ├── config.js                  # 設定定数
-   ├── app.js                     # エントリーポイント
-   ├── models/
-   │   └── Memo.js               # Memoドメインオブジェクト
-   ├── services/
-   │   ├── InputLimiter.js       # 入力制限ロジック
-   │   ├── LocalStorageRepository.js  # ローカル保存
-   │   ├── CloudRepository.js    # クラウド抽象化
-   │   ├── GistRepository.js     # Gist実装
-   │   ├── SyncManager.js        # 同期制御
-   │   └── AuthManager.js        # 認証管理
-   └── controllers/
-       └── AppController.js       # UI制御
+├── js/
+│   ├── config.js                  # 設定定数
+│   ├── app.js                     # エントリーポイント
+│   ├── models/
+│   │   └── Memo.js               # Memoドメインオブジェクト
+│   ├── services/
+│   │   ├── InputLimiter.js       # 入力制限ロジック
+│   │   ├── LocalStorageRepository.js  # ローカル保存
+│   │   ├── CloudRepository.js    # クラウド抽象化
+│   │   ├── GistRepository.js     # Gist実装
+│   │   ├── SyncManager.js        # 同期制御
+│   │   └── AuthManager.js        # 認証管理
+│   └── controllers/
+│       └── AppController.js       # UI制御
+└── icons/
+    ├── icon_192.svg              # アイコン（SVG）
+    ├── icon_512.svg              # アイコン（SVG）
+    └── generate-icons.html       # アイコン生成ガイド
 ```
 
 ### ドキュメント（4ファイル）
@@ -313,11 +317,23 @@ git push origin main
 
 ## 既知の制限事項
 
-### 1. OAuth認証
+### 1. アイコン
+
+現在SVG形式。PNG変換が必要：
+
+```bash
+# ImageMagick を使用
+convert icons/icon_192.svg icons/icon_192.png
+convert icons/icon_512.svg icons/icon_512.png
+```
+
+または、オンラインツール（https://svgtopng.com）を使用。
+
+### 2. OAuth認証
 
 Personal Access Token方式は開発時の実装。本番環境では Device Flow を推奨。
 
-### 2. 同時編集
+### 3. 同時編集
 
 設計上、同時編集は想定していない。後勝ちで上書きされる。
 

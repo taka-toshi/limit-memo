@@ -74,20 +74,24 @@ memo-app/
 ├── sw.js                   # Service Worker
 ├── css/
 │   └── style.css          # スタイルシート
-└── js/
-    ├── config.js          # 設定定数
-    ├── app.js             # エントリーポイント
-    ├── models/
-    │   └── Memo.js        # Memoドメインオブジェクト
-    ├── services/
-    │   ├── InputLimiter.js
-    │   ├── LocalStorageRepository.js
-    │   ├── CloudRepository.js
-    │   ├── GistRepository.js
-    │   ├── SyncManager.js
-    │   └── AuthManager.js
-    └── controllers/
-        └── AppController.js
+├── js/
+│   ├── config.js          # 設定定数
+│   ├── app.js             # エントリーポイント
+│   ├── models/
+│   │   └── Memo.js        # Memoドメインオブジェクト
+│   ├── services/
+│   │   ├── InputLimiter.js
+│   │   ├── LocalStorageRepository.js
+│   │   ├── CloudRepository.js
+│   │   ├── GistRepository.js
+│   │   ├── SyncManager.js
+│   │   └── AuthManager.js
+│   └── controllers/
+│       └── AppController.js
+└── icons/
+    ├── icon_192.png
+    ├── icon_512.png
+    └── *.svg
 ```
 
 ## GitHub認証の設定

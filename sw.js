@@ -15,7 +15,9 @@ const ASSETS_TO_CACHE = [
   '/js/services/GistRepository.js',
   '/js/services/AuthManager.js',
   '/js/services/SyncManager.js',
-  '/js/controllers/AppController.js'
+  '/js/controllers/AppController.js',
+  '/icons/icon_192.png',
+  '/icons/icon_512.png'
 ];
 
 /**
