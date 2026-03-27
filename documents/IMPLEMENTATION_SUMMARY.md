@@ -30,8 +30,8 @@ memo-app/
 │   └── controllers/
 │       └── AppController.js       # UI制御
 └── icons/
-    ├── icon-192.svg              # アイコン（SVG）
-    ├── icon-512.svg              # アイコン（SVG）
+    ├── icon_192.svg              # アイコン（SVG）
+    ├── icon_512.svg              # アイコン（SVG）
     └── generate-icons.html       # アイコン生成ガイド
 ```
 
@@ -323,8 +323,8 @@ git push origin main
 
 ```bash
 # ImageMagick を使用
-convert icons/icon-192.svg icons/icon-192.png
-convert icons/icon-512.svg icons/icon-512.png
+convert icons/icon_192.svg icons/icon_192.png
+convert icons/icon_512.svg icons/icon_512.png
 ```
 
 または、オンラインツール（https://svgtopng.com）を使用。

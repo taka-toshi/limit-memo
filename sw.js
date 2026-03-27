@@ -16,8 +16,8 @@ const ASSETS_TO_CACHE = [
   '/js/services/AuthManager.js',
   '/js/services/SyncManager.js',
   '/js/controllers/AppController.js',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png'
+  '/icons/icon_192.png',
+  '/icons/icon_512.png'
 ];
 
 /**

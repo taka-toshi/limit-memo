@@ -19,5 +19,5 @@
 │   │   └── AppController.js
 │   └── app.js             # エントリーポイント
 └── icons/
-    ├── icon-192.png
-    └── icon-512.png
+    ├── icon_192.png
+    └── icon_512.png
