@@ -305,6 +305,8 @@ export class AppController {
       this.decryptedDraftDirty = true;
       this.updateUI({ keepEditorValue: true });
       this.updateSyncStatus('暗号化メモ編集中...');
+      // 復号編集中でも3秒デバウンスで同期キューに乗せる
+      this.scheduleAutoSync();
       return;
     }
 
