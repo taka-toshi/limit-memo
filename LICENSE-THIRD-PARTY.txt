@@ -5,3 +5,8 @@ Third-Party Libraries Used
    Author: Google
    License: Apache License, Version 2.0
    URL: https://material.io/resources/icons/
+
+2. Firebase JavaScript SDK
+   Author: Google
+   License: Apache License, Version 2.0
+   URL: https://firebase.google.com/

@@ -292,7 +292,6 @@ class EncryptedGistRepository extends GistRepository {
 
 ## 今後の拡張案
 
-- [ ] 暗号化の実装
 - [ ] Google Drive 対応
 - [ ] エクスポート機能（Markdown, TXT）
 - [ ] テーマ切り替え（ダークモード）
